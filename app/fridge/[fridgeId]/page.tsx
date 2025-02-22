@@ -13,16 +13,15 @@ import Expense from "./Expense";
 const FridgePage = () => {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const params = useParams(); // ✅ FIX: Use useParams() instead of accessing params directly
-  const fridgeId = params.fridgeId as string; // ✅ Get fridgeId as a string
+  const params = useParams();
+  const fridgeId = params.fridgeId as string;
   const [fridge, setFridge] = useState<any>(null);
-  // const [activeTab, setActiveTab] = useState<"overview" | "grocery" | "expenses">("overview");
-  const [activeTab, setActiveTab] = useState("overview");
-
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "grocery" | "expense"
+  >("overview");
 
   useEffect(() => {
     if (loading) return;
-
     if (!user) {
       router.push("/login");
       return;
@@ -34,9 +33,9 @@ const FridgePage = () => {
       const fridgeSnap = await getDoc(fridgeRef);
 
       if (fridgeSnap.exists()) {
-        setFridge(fridgeSnap.data());
+        setFridge({ id: fridgeSnap.id, ...fridgeSnap.data() });
       } else {
-        router.push("/create-fridge"); // If fridge doesn't exist, create one
+        router.push("/create-fridge");
       }
     };
 
@@ -51,38 +50,54 @@ const FridgePage = () => {
         <div className="text-2xl font-bold font-playpen">frij.io</div>
       </header>
       <div className="flex border-b">
-        <button>{fridge.name}</button>
-          <button
-            className={`py-2 px-4 w-full text-center ${activeTab === 'Overview' ? 'border-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
-            onClick={() => setActiveTab('Overview')}
-          >
-            Tab 1
-          </button>
-          <button
-            className={`py-2 px-4 w-full text-center ${activeTab === 'Grocery' ? 'border-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
-            onClick={() => setActiveTab('Grocery')}
-          >
-            Tab 2
-          </button>
-          <button
-            className={`py-2 px-4 w-full text-center ${activeTab === 'Expense' ? 'border-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
-            onClick={() => setActiveTab('Expense')}
-          >
-            Tab 3
-          </button>
-        </div>
+        <button className="p-2 font-bold">{fridge.name}</button>
+        <button
+          className={`py-2 px-4 w-full text-center ${
+            activeTab === "overview"
+              ? "border-b-2 border-blue-500 text-blue-500"
+              : "text-gray-500"
+          }`}
+          onClick={() => setActiveTab("overview")}
+        >
+          Overview
+        </button>
+        <button
+          className={`py-2 px-4 w-full text-center ${
+            activeTab === "grocery"
+              ? "border-b-2 border-blue-500 text-blue-500"
+              : "text-gray-500"
+          }`}
+          onClick={() => setActiveTab("grocery")}
+        >
+          Grocery
+        </button>
+        <button
+          className={`py-2 px-4 w-full text-center ${
+            activeTab === "expense"
+              ? "border-b-2 border-blue-500 text-blue-500"
+              : "text-gray-500"
+          }`}
+          onClick={() => setActiveTab("expense")}
+        >
+          Expense
+        </button>
+      </div>
 
-        {/* Tab Content */}
-        <div className="p-5">
-          {activeTab === 'Overview' && <Overview />}
-          {activeTab === 'Grocery' && <GroceryList />}
-          {activeTab === 'Expense' && <Expense />}
-        </div>
-      
-      <p className="text-lg">Fridge ID: {fridgeId}</p>
-      <button onClick={logout} className="bg-green text-white px-4 py-2 rounded mt-4">
-        Logout
-      </button>
+      <div className="p-5">
+        {activeTab === "overview" && <Overview fridgeId={fridgeId} />}
+        {activeTab === "grocery" && <GroceryList fridgeId={fridgeId} />}
+        {activeTab === "expense" && <Expense fridgeId={fridgeId} />}
+      </div>
+
+      <div className="mt-4 text-center">
+        <p className="text-lg">Fridge ID: {fridgeId}</p>
+        <button
+          onClick={logout}
+          className="bg-green-500 text-white px-4 py-2 rounded mt-4"
+        >
+          Logout
+        </button>
+      </div>
     </div>
   );
 };

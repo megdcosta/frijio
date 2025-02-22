@@ -5,12 +5,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getUser, assignFridgeToUser } from "../../firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
-import { collection, addDoc, getDocs, doc, getDoc, query, where } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  getDocs,
+  doc,
+  getDoc,
+  query,
+  where,
+} from "firebase/firestore";
 
 // const getUserExpenses = async (userId: string) => {
 //     try {
 //         const expensesRef = collection(db, "expenses");
-    
+
 //         // Query to find expenses where the user is either the payer or in the USER_IDS array
 //         const q = query(
 //             expensesRef,
@@ -61,36 +69,35 @@ import { collection, addDoc, getDocs, doc, getDoc, query, where } from "firebase
 //       console.error("Error adding expense: ", error);
 //     }
 //   };
-  
+
 //   addExpense("Dinner at Restaurant", 50.0, "user1_id", ["user1_id", "user2_id", "user3_id"]);
 
-
 const Expense = () => {
-    const { user } = useAuth(); // Assuming useAuth gives the logged-in user (with user.uid)
-  
-    // State for form inputs
-    const [itemName, setItemName] = useState<string>("");
-    const [cost, setCost] = useState<number>(0);
-    const [payerId, setPayerId] = useState<string>(user?.uid || ""); // Payer ID should be the current user
-    const [userIds, setUserIds] = useState<string>(""); // Comma-separated list of user IDs who will split the cost
+  const { user } = useAuth(); // Assuming useAuth gives the logged-in user (with user.uid)
 
-    // Handle adding a new expense
+  // State for form inputs
+  const [itemName, setItemName] = useState<string>("");
+  const [cost, setCost] = useState<number>(0);
+  const [payerId, setPayerId] = useState<string>(user?.uid || ""); // Payer ID should be the current user
+  const [userIds, setUserIds] = useState<string>(""); // Comma-separated list of user IDs who will split the cost
+
+  // Handle adding a new expense
   const handleAddExpense = async () => {
-    if (!itemName.trim()){
-        alert("1");
-        return;
-    }else if( cost <= 0 ){
-        alert("2");
-        return;
-    }else if(!userIds.trim()){
-        alert("3");
-        return;
-    }else if(!payerId){
+    if (!itemName.trim()) {
+      alert("1");
+      return;
+    } else if (cost <= 0) {
+      alert("2");
+      return;
+    } else if (!userIds.trim()) {
+      alert("3");
+      return;
+    } else if (!payerId) {
       alert("Please fill in all fields correctly.");
       return;
     }
 
-    const userIdsArray = userIds.split(",").map(id => id.trim()); // Convert comma-separated list to an array of user IDs
+    const userIdsArray = userIds.split(",").map((id) => id.trim()); // Convert comma-separated list to an array of user IDs
 
     try {
       const expenseRef = collection(db, "expenses"); // Reference to the 'expenses' collection
@@ -117,7 +124,9 @@ const Expense = () => {
 
       {/* Form for adding an expense */}
       <div>
-        <label htmlFor="itemName" className="block text-gray-700 font-medium">Item Name:</label>
+        <label htmlFor="itemName" className="block text-gray-700 font-medium">
+          Item Name:
+        </label>
         <input
           type="text"
           id="itemName"
@@ -129,7 +138,9 @@ const Expense = () => {
       </div>
 
       <div className="mt-4">
-        <label htmlFor="cost" className="block text-gray-700 font-medium">Cost:</label>
+        <label htmlFor="cost" className="block text-gray-700 font-medium">
+          Cost:
+        </label>
         <input
           type="number"
           id="cost"
@@ -141,7 +152,9 @@ const Expense = () => {
       </div>
 
       <div className="mt-4">
-        <label htmlFor="payerId" className="block text-gray-700 font-medium">Payer ID:</label>
+        <label htmlFor="payerId" className="block text-gray-700 font-medium">
+          Payer ID:
+        </label>
         <input
           type="text"
           id="payerId"
@@ -154,7 +167,9 @@ const Expense = () => {
       </div>
 
       <div className="mt-4">
-        <label htmlFor="userIds" className="block text-gray-700 font-medium">User IDs (comma-separated):</label>
+        <label htmlFor="userIds" className="block text-gray-700 font-medium">
+          User IDs (comma-separated):
+        </label>
         <input
           type="text"
           id="userIds"
