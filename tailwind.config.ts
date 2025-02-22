@@ -12,6 +12,13 @@ export default {
         sans: ['"DM Sans"', "sans-serif"],
         playpen: ['"Playpen Sans"', "sans-serif"],
       },
+      colors:{
+        text: '#473c38',
+        white: '#f1efd8',
+        accent: '#ebb4bc',
+        secondary: '#3d4e52',
+        background: '#5e7a80',
+      },
     },
   },
   plugins: [],
