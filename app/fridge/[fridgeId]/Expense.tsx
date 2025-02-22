@@ -1,196 +1,225 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { getUser, assignFridgeToUser } from "../../firebase/firestore";
 import { db } from "../../firebase/firebaseConfig";
 import {
   collection,
   addDoc,
   getDocs,
-  doc,
-  getDoc,
   query,
   where,
+  serverTimestamp,
 } from "firebase/firestore";
 
-// const getUserExpenses = async (userId: string) => {
-//     try {
-//         const expensesRef = collection(db, "expenses");
+interface ExpenseProps {
+  fridgeId: string;
+}
 
-//         // Query to find expenses where the user is either the payer or in the USER_IDS array
-//         const q = query(
-//             expensesRef,
-//             where("PAYER_ID", "==", userId), // You could add more conditions here if needed
-//             where("USER_IDS", "array-contains", userId) // Check if the user is in the array
-//         );
-//         const querySnapshot = await getDocs(q);
+interface ExpenseData {
+  id: string;
+  item_name: string;
+  cost: number;
+  payer_id: string;
+  user_ids: string[];
+  created_at: any;
+  fridge_id: string;
+}
 
-//         const expenses = querySnapshot.docs.map(doc => ({
-//             id: doc.id,
-//             ...doc.data(),
-//             }));
+export default function Expenses({ fridgeId }: ExpenseProps) {
+  const { user } = useAuth();
+  const [expenses, setExpenses] = useState<ExpenseData[]>([]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-//             console.log("Expenses for user:", expenses);
-//             return expenses;
-//         } catch (error) {
-//             console.error("Error getting expenses: ", error);
-//         }
-//     };
+  // Form state
+  const [itemName, setItemName] = useState("");
+  const [cost, setCost] = useState("");
+  const [userIds, setUserIds] = useState("");
 
-//     // Function to update an expense
-//     const updateExpense = async (expenseId: string, newCost: number) => {
-//         try {
-//         const expenseRef = doc(db, "expenses", expenseId);
-//         await updateDoc(expenseRef, {
-//             COST: newCost,
-//         });
-//         console.log("Expense updated");
-//         } catch (error) {
-//         console.error("Error updating expense: ", error);
-//         }
-//     };
-
-// // Example usage
-// getUserExpenses("user1_id");
-
-// const addExpense = async (itemName: string, cost: number, payerId: string, userIds: string[]) => {
-//     try {
-//       const expenseRef = collection(db, "expenses"); // Reference to the 'expenses' collection
-//       const newExpense = await addDoc(expenseRef, {
-//         ITEM_NAME: itemName,
-//         COST: cost,
-//         PAYER_ID: payerId,
-//         USER_IDS: userIds,
-//       });
-//       console.log("Expense added with ID:", newExpense.id);
-//     } catch (error) {
-//       console.error("Error adding expense: ", error);
-//     }
-//   };
-
-//   addExpense("Dinner at Restaurant", 50.0, "user1_id", ["user1_id", "user2_id", "user3_id"]);
-
-const Expense = () => {
-  const { user } = useAuth(); // Assuming useAuth gives the logged-in user (with user.uid)
-
-  // State for form inputs
-  const [itemName, setItemName] = useState<string>("");
-  const [cost, setCost] = useState<number>(0);
-  const [payerId, setPayerId] = useState<string>(user?.uid || ""); // Payer ID should be the current user
-  const [userIds, setUserIds] = useState<string>(""); // Comma-separated list of user IDs who will split the cost
-
-  // Handle adding a new expense
-  const handleAddExpense = async () => {
-    if (!itemName.trim()) {
-      alert("1");
-      return;
-    } else if (cost <= 0) {
-      alert("2");
-      return;
-    } else if (!userIds.trim()) {
-      alert("3");
-      return;
-    } else if (!payerId) {
-      alert("Please fill in all fields correctly.");
-      return;
-    }
-
-    const userIdsArray = userIds.split(",").map((id) => id.trim()); // Convert comma-separated list to an array of user IDs
-
+  const fetchExpenses = async () => {
     try {
-      const expenseRef = collection(db, "expenses"); // Reference to the 'expenses' collection
-      await addDoc(expenseRef, {
-        ITEM_NAME: itemName,
-        COST: cost,
-        PAYER_ID: payerId,
-        USER_IDS: userIdsArray,
-        // createdAt: Timestamp.now(), // Optional: timestamp for when the expense was added
-      });
+      setLoading(true);
+      const expensesRef = collection(db, "expenses");
+      const q = query(expensesRef, where("fridge_id", "==", fridgeId));
 
-      // Reset form after submission
-      setItemName("");
-      setCost(0);
-      setUserIds("");
-    } catch (error) {
-      console.error("Error adding expense: ", error);
+      const snapshot = await getDocs(q);
+      const expensesData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as ExpenseData[];
+
+      setExpenses(expensesData);
+    } catch (err: any) {
+      setError("Failed to load expenses: " + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (fridgeId) {
+      fetchExpenses();
+    }
+  }, [fridgeId]);
+
+  const handleAddExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!user || !fridgeId) return;
+
+    // Validation
+    if (!itemName.trim()) {
+      setError("Item name is required");
+      return;
+    }
+    if (!cost || Number(cost) <= 0) {
+      setError("Valid cost amount is required");
+      return;
+    }
+    if (!userIds.trim()) {
+      setError("At least one user ID is required");
+      return;
+    }
+
+    try {
+      const userIdsArray = userIds.split(",").map((id) => id.trim());
+      const expensesRef = collection(db, "expenses");
+
+      await addDoc(expensesRef, {
+        item_name: itemName,
+        cost: Number(cost),
+        payer_id: user.uid,
+        user_ids: userIdsArray,
+        fridge_id: fridgeId,
+        created_at: serverTimestamp(),
+      });
+
+      // Reset form
+      setItemName("");
+      setCost("");
+      setUserIds("");
+
+      // Refresh list
+      await fetchExpenses();
+    } catch (err: any) {
+      console.error("Expense error:", err);
+      setError("Failed to add expense: " + err.message);
+    }
+  };
+
+  const formatDate = (timestamp: any) => {
+    if (!timestamp?.toDate) return "N/A";
+    return new Date(timestamp.toDate()).toLocaleDateString();
+  };
+
   return (
-    <div className="max-w-md mx-auto p-5 bg-white shadow-md rounded-lg">
-      <h2 className="text-2xl font-semibold mb-4">Add New Expense</h2>
+    <div className="p-4 max-w-4xl mx-auto">
+      <h1 className="text-2xl font-bold mb-6">Expense Tracking</h1>
 
-      {/* Form for adding an expense */}
-      <div>
-        <label htmlFor="itemName" className="block text-gray-700 font-medium">
-          Item Name:
-        </label>
-        <input
-          type="text"
-          id="itemName"
-          value={itemName}
-          onChange={(e) => setItemName(e.target.value)}
-          className="w-full p-2 mt-2 border border-gray-300 rounded"
-          placeholder="Enter the name of the item"
-        />
+      {/* Add Expense Form */}
+      <div className="bg-[#1F2A30] p-4 rounded-lg mb-8">
+        <h2 className="text-xl font-bold mb-4 text-[#F1EFD8]">
+          Add New Expense
+        </h2>
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+
+        <form onSubmit={handleAddExpense} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[#F1EFD8] mb-2">Item Name</label>
+              <input
+                type="text"
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                className="w-full p-2 rounded bg-[#3D4E52] border border-gray-600 text-[#F1EFD8]"
+                placeholder="Enter item name"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[#F1EFD8] mb-2">Cost ($)</label>
+              <input
+                type="number"
+                value={cost}
+                onChange={(e) => setCost(e.target.value)}
+                className="w-full p-2 rounded bg-[#3D4E52] border border-gray-600 text-[#F1EFD8]"
+                placeholder="Enter amount"
+                step="0.01"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-[#F1EFD8] mb-2">
+                Split Between User IDs (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={userIds}
+                onChange={(e) => setUserIds(e.target.value)}
+                className="w-full p-2 rounded bg-[#3D4E52] border border-gray-600 text-[#F1EFD8]"
+                placeholder="e.g., user1, user2, user3"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            className="w-full bg-[#5E7A80] text-[#F1EFD8] py-2 rounded hover:bg-[#4A6065] transition"
+          >
+            Add Expense
+          </button>
+        </form>
       </div>
 
-      <div className="mt-4">
-        <label htmlFor="cost" className="block text-gray-700 font-medium">
-          Cost:
-        </label>
-        <input
-          type="number"
-          id="cost"
-          value={cost}
-          onChange={(e) => setCost(Number(e.target.value))}
-          className="w-full p-2 mt-2 border border-gray-300 rounded"
-          placeholder="Enter the cost of the item"
-        />
-      </div>
+      {/* Expenses List */}
+      <div className="bg-[#1F2A30] p-4 rounded-lg">
+        <h2 className="text-xl font-bold mb-4 text-[#F1EFD8]">
+          Expense History
+        </h2>
 
-      <div className="mt-4">
-        <label htmlFor="payerId" className="block text-gray-700 font-medium">
-          Payer ID:
-        </label>
-        <input
-          type="text"
-          id="payerId"
-          value={payerId}
-          onChange={(e) => setPayerId(e.target.value)}
-          className="w-full p-2 mt-2 border border-gray-300 rounded"
-          placeholder="Payer's user ID (automatically set)"
-          disabled
-        />
-      </div>
-
-      <div className="mt-4">
-        <label htmlFor="userIds" className="block text-gray-700 font-medium">
-          User IDs (comma-separated):
-        </label>
-        <input
-          type="text"
-          id="userIds"
-          value={userIds}
-          onChange={(e) => setUserIds(e.target.value)}
-          className="w-full p-2 mt-2 border border-gray-300 rounded"
-          placeholder="Enter user IDs splitting the cost"
-        />
-      </div>
-
-      {/* Submit Button */}
-      <div className="mt-6">
-        <button
-          onClick={handleAddExpense}
-          className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-        >
-          Add Expense
-        </button>
+        {loading ? (
+          <p className="text-[#F1EFD8]">Loading expenses...</p>
+        ) : expenses.length === 0 ? (
+          <p className="text-[#F1EFD8]">No expenses recorded yet</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-600 text-[#F1EFD8]">
+                  <th className="text-left p-2">Item</th>
+                  <th className="text-left p-2">Amount</th>
+                  <th className="text-left p-2">Paid By</th>
+                  <th className="text-left p-2">Split Between</th>
+                  <th className="text-left p-2">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {expenses.map((expense) => (
+                  <tr key={expense.id} className="border-b border-gray-600">
+                    <td className="p-2 text-[#F1EFD8]">{expense.item_name}</td>
+                    <td className="p-2 text-[#F1EFD8]">
+                      ${expense.cost.toFixed(2)}
+                    </td>
+                    <td className="p-2 text-[#F1EFD8]">
+                      {expense.payer_id === user?.uid
+                        ? "You"
+                        : expense.payer_id}
+                    </td>
+                    <td className="p-2 text-[#F1EFD8]">
+                      {expense.user_ids.join(", ")}
+                    </td>
+                    <td className="p-2 text-[#F1EFD8]">
+                      {formatDate(expense.created_at)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default Expense;
+}
