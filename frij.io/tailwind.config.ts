@@ -8,9 +8,9 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
+      fontFamily: {
+        sans: ['"DM Sans"', "sans-serif"],
+        playpen: ['"Playpen Sans"', "sans-serif"],
       },
     },
   },
