@@ -10,7 +10,7 @@ import {
 } from "../firebase/auth";
 
 export default function AuthPage() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
 
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState("");
@@ -25,14 +25,6 @@ export default function AuthPage() {
       await loginWithEmail(email, password);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-[#3D4E52]">
-        <p className="text-[#F1EFD8] text-xl">Loading...</p>
-      </div>
-    );
-  }
 
   if (user) {
     return (
@@ -59,9 +51,7 @@ export default function AuthPage() {
               <h2 className="text-3xl font-bold mb-4 font-playpen">
                 Hello, Friend!
               </h2>
-              <p className="mb-8">
-                Create an account to start your journey with us
-              </p>
+              <p className="mb-8">Join us and take control of your fridge!</p>
               <button
                 onClick={() => setIsRegistering(true)}
                 className="border-2 border-[#F1EFD8] px-6 py-2 rounded-full hover:bg-white hover:text-[#5E7A80] transition"
