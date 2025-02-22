@@ -14,6 +14,8 @@ export default function SelectFridgePage() {
   const [fridgeId, setFridgeId] = useState("");
   const [userFridges, setUserFridges] = useState<any[]>([]);
   const [error, setError] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // For dropdown visibility
+  const [selectedFridge, setSelectedFridge] = useState<any>(null); // For storing selected fridge
 
   useEffect(() => {
     if (!user) return;
@@ -60,68 +62,83 @@ export default function SelectFridgePage() {
     }
   };
 
+  const handleSelectFridge = (fridge: any) => {
+    setSelectedFridge(fridge); // Set the selected fridge
+    setIsDropdownOpen(false); // Close the dropdown
+    router.push(`/fridge/${fridge.id}`); // Navigate to the selected fridge
+  };
+
   if (loading) return <p>Loading...</p>;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-6">
-      <h1 className="text-3xl font-bold mb-4">Select or Create a Fridge</h1>
-
+    <div className="flex flex-col items-center justify-center min-h-screen bg-background p-6">
       {error && <p className="text-red-500">{error}</p>}
-
       {/* If the user has fridges, allow them to select from a list */}
       {userFridges.length > 0 && (
-        <div className="bg-white p-6 rounded shadow-lg mb-6 w-full max-w-md">
-          <h2 className="text-xl font-semibold mb-4">Your Fridges</h2>
-          <ul className="space-y-2">
-            {userFridges.map((fridge) => (
-              <li key={fridge.id} className="flex justify-between items-center p-2 border rounded">
-                <span>{fridge.name}</span>
-                <button
-                  onClick={() => router.push(`/fridge/${fridge.id}`)}
-                  className="bg-green-500 text-white px-3 py-1 rounded"
-                >
-                  Enter
-                </button>
-              </li>
-            ))}
-          </ul>
+        <div className="px-20 mb-6 w-full max-w-md">
+
+          {/* Dropdown Button */}
+          <button
+            onClick={() => setIsDropdownOpen((prev) => !prev)}
+            className="p-2 border border-white w-sm max-w-md text-white px-4 py-2 rounded-xl w-full font-semibold font-sans"
+          >
+            {selectedFridge ? selectedFridge.name : "Select Your Fridge"}
+          </button>
+
+          {/* Dropdown menu */}
+          {isDropdownOpen && (
+            <div className="absolute mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-10">
+              <ul className="py-1">
+                {userFridges.map((fridge) => (
+                  <li
+                    key={fridge.id}
+                    className="cursor-pointer p-2 hover:bg-gray-200 rounded"
+                    onClick={() => handleSelectFridge(fridge)}
+                  >
+                    {fridge.name}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
       {/* Option to Join a Fridge by Entering an ID */}
-      <div className="bg-white p-6 rounded shadow-lg mb-6 w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4">Join Another Fridge</h2>
-        <input
-          type="text"
-          placeholder="Enter Fridge ID"
-          value={fridgeId}
-          onChange={(e) => setFridgeId(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded mb-2"
-        />
-        <button
-          onClick={handleJoinFridge}
-          className="bg-yellow-500 text-white px-4 py-2 rounded w-full"
-        >
-          Join Fridge
-        </button>
-      </div>
+      <div className="bg-white py-16 px-24 rounded-[35px] shadow-sm mb-6 w-full max-w-xl grid place-items-center">
+      <h1 className="text-3xl font-bold mb-4 font-playpen text-text">Add a Fridge</h1>
 
-      {/* Option to Create a New Fridge */}
-      <div className="bg-white p-6 rounded shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4">Create a New Fridge</h2>
-        <input
-          type="text"
-          placeholder="Fridge Name"
-          value={fridgeName}
-          onChange={(e) => setFridgeName(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded mb-2"
-        />
-        <button
-          onClick={handleCreateFridge}
-          className="bg-blue-500 text-white px-4 py-2 rounded w-full"
-        >
-          Create Fridge
-        </button>
+          <input
+            type="text"
+            placeholder="Enter Fridge ID"
+            value={fridgeId}
+            onChange={(e) => setFridgeId(e.target.value)}
+            className="w-full p-2 border border-text rounded-full mb-2 text-center bg-transparent text-text placeholder-[#796d6d]"
+          />
+          <button
+            onClick={handleJoinFridge}
+            className="bg-text text-white px-4 py-2 rounded-full w-full font-semibold font-sans"
+          >
+            Join Fridge
+          </button>
+        {/* </div> */}
+
+        {/* Option to Create a New Fridge */}
+          <p className="text-sm m-4 font-sans font-semibold text-text">OR</p>
+          <input
+            type="text"
+            placeholder="Fridge Name"
+            value={fridgeName}
+            onChange={(e) => setFridgeName(e.target.value)}
+            className="w-full p-2 border border-text rounded-full mb-2 text-center bg-transparent text-text placeholder-[#796d6d]"
+          />
+          <button
+            onClick={handleCreateFridge}
+            className="bg-text text-white px-4 py-2 rounded-full w-full font-semibold font-sans"
+          >
+            Create New Fridge
+          </button>
+        {/* </div> */}
       </div>
     </div>
   );
