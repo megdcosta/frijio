@@ -29,6 +29,7 @@ export default function Dashboard({ fridge }: { fridge: any }) {
       {/* Header */}
       <header className="flex justify-between items-center w-full mb-6">
         <h1 className="text-3xl font-bold">frij.io</h1>
+        
         <button 
           onClick={logout} 
           className="bg-red-500 text-white px-4 py-2 rounded"
