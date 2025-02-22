@@ -1,28 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useRouter } from "next/navigation";
-import { registerWithEmail, loginWithEmail, signInWithGoogle } from "../firebase/auth";
+import {
+  registerWithEmail,
+  loginWithEmail,
+  signInWithGoogle,
+  logout,
+} from "../firebase/auth";
 import { getUser } from "../firebase/firestore";
 
-const AuthForm = () => {
+export default function AuthPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+
+  const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isRegistering, setIsRegistering] = useState(false);
+  const [name, setName] = useState("");
+  const [fridgeData, setFridgeData] = useState<any>(null);
+
+  // After login, fetch the user's fridge info.
+  const checkUserAndRedirect = async (userId: string) => {
+    const userData = await getUser(userId);
+    if (userData && userData.fridgeId) {
+      setFridgeData(userData);
+    } else {
+      router.push("/create-fridge");
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    let loggedInUser = null;
+    let loggedInUser;
     if (isRegistering) {
       loggedInUser = await registerWithEmail(email, password);
     } else {
       loggedInUser = await loginWithEmail(email, password);
     }
-
     if (loggedInUser) {
       checkUserAndRedirect(loggedInUser.uid);
     }
@@ -35,68 +51,161 @@ const AuthForm = () => {
     }
   };
 
-  // 🔥 Check user in Firestore and redirect accordingly
-  const checkUserAndRedirect = async (userId: string) => {
-    const userData = await getUser(userId);
-    if (userData && userData.fridgeId) {
-      router.push(`/fridge/${userData.fridgeId}`);
-    } else {
-      router.push("/create-fridge");
+  // If the user is already logged in but fridgeData hasn't been fetched, get it.
+  useEffect(() => {
+    if (user && !fridgeData) {
+      (async () => {
+        const userData = await getUser(user.uid);
+        if (userData && userData.fridgeId) {
+          setFridgeData(userData);
+        }
+      })();
     }
-  };
+  }, [user, fridgeData]);
 
   if (loading) return <p>Loading...</p>;
 
+  if (user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#3D4E52] text-[#F1EFD8]">
+        <h1 className="text-2xl mb-4">
+          Welcome, {user.email || user.displayName}!
+        </h1>
+        {fridgeData ? (
+          <p className="mb-4">Your fridge: {fridgeData.fridgeId}</p>
+        ) : (
+          <p className="mb-4">Loading your fridge info...</p>
+        )}
+        <button
+          onClick={logout}
+          className="px-6 py-2 bg-red-500 rounded text-[#F1EFD8]"
+        >
+          Logout
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 max-w-md mx-auto bg-white rounded-lg shadow-lg">
-      <form onSubmit={handleAuth} className="space-y-4">
-        <h2 className="text-2xl font-bold text-center">
-          {isRegistering ? "Register" : "Login"}
-        </h2>
+    <div className="min-h-screen flex items-center justify-center bg-[#3D4E52] px-4">
+      <div className="bg-[#5E7A80] relative w-full max-w-5xl h-[600px] flex rounded-3xl overflow-hidden shadow-xl">
+        {!isRegistering && (
+          <>
+            <div className="flex-1 text-[#F1EFD8] flex flex-col items-center justify-center p-10 text-center">
+              <h2 className="text-3xl font-bold mb-4 font-playpen">
+                Hello, Friend!
+              </h2>
+              <p className="mb-8">Join us and take control of your fridge!</p>
+              <button
+                onClick={() => setIsRegistering(true)}
+                className="border-2 border-[#F1EFD8] px-6 py-2 rounded-full hover:bg-white hover:text-[#5E7A80] transition"
+              >
+                Sign Up
+              </button>
+            </div>
+            <div className="flex-1 bg-[#F1EFD8] text-[#473C38] flex flex-col items-center rounded-3xl justify-center p-10 text-center">
+              <h1 className="text-4xl font-bold mb-2 font-playpen">frij.io</h1>
+              <h2 className="text-xl mb-8">Welcome to frij.io</h2>
+              <form onSubmit={handleAuth} className="w-full max-w-sm space-y-4">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded"
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded"
+                />
+                <button
+                  type="submit"
+                  className="w-full bg-[#473C38] text-[#F1EFD8] py-2 rounded text-lg font-semibold hover:bg-[#5A4C47]"
+                >
+                  Log In
+                </button>
+                <p className="text-sm underline cursor-pointer">
+                  Forgot your password?
+                </p>
+                <div className="mt-4">
+                  <button
+                    onClick={handleGoogleLogin}
+                    type="button"
+                    className="w-full bg-gray-800 text-white px-4 py-2 rounded"
+                  >
+                    Sign in with Google
+                  </button>
+                </div>
+              </form>
+            </div>
+          </>
+        )}
 
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded"
-          required
-        />
-
-        <button
-          type="submit"
-          className="bg-blue-500 text-white px-4 py-2 rounded w-full"
-        >
-          {isRegistering ? "Register" : "Login"}
-        </button>
-
-        <p
-          onClick={() => setIsRegistering(!isRegistering)}
-          className="text-blue-500 text-center cursor-pointer"
-        >
-          {isRegistering ? "Already have an account? Login" : "Need an account? Register"}
-        </p>
-
-        <div className="text-center">or</div>
-
-        <button
-          onClick={handleGoogleLogin}
-          type="button"
-          className="bg-gray-800 text-white px-4 py-2 rounded w-full"
-        >
-          Sign in with Google
-        </button>
-      </form>
+        {isRegistering && (
+          <>
+            <div className="flex-1 bg-[#F1EFD8] text-[#473C38] flex flex-col items-center rounded-3xl justify-center p-10 text-center">
+              <h1 className="text-4xl font-bold mb-2 font-playpen">frij.io</h1>
+              <h2 className="text-xl mb-8">Create Account</h2>
+              <form onSubmit={handleAuth} className="w-full max-w-sm space-y-4">
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded"
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded"
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded"
+                />
+                <button
+                  type="submit"
+                  className="w-full bg-[#473C38] text-[#F1EFD8] py-2 rounded text-lg font-semibold hover:bg-[#5A4C47]"
+                >
+                  Sign Up
+                </button>
+                <button
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  className="w-full bg-[#4285F4] hover:bg-[#357ae8] text-[#F1EFD8] py-2 rounded font-semibold flex items-center justify-center gap-2 mt-4"
+                >
+                  <span>Continue with Google</span>
+                </button>
+              </form>
+            </div>
+            <div className="flex-1 bg-[#5E7A80] text-[#F1EFD8] flex flex-col items-center justify-center p-10 text-center">
+              <h2 className="text-3xl font-bold mb-2 font-playpen">
+                Welcome Back
+              </h2>
+              <p className="mb-8">Let us track your fridge!</p>
+              <button
+                onClick={() => setIsRegistering(false)}
+                className="border-2 border-[#F1EFD8] px-6 py-2 rounded-full hover:bg-white hover:text-[#5E7A80] transition"
+              >
+                Sign In
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
-};
-
-export default AuthForm;
+}
