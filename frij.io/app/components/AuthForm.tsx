@@ -3,12 +3,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useRouter } from "next/navigation";
-import {
-  registerWithEmail,
-  loginWithEmail,
-  signInWithGoogle,
-  logout,
-} from "../firebase/auth";
+import { registerWithEmail, loginWithEmail, signInWithGoogle, logout } from "../firebase/auth";
 import { getUser } from "../firebase/firestore";
 
 export default function AuthPage() {
@@ -23,12 +18,7 @@ export default function AuthPage() {
 
   // After login, fetch the user's fridge info.
   const checkUserAndRedirect = async (userId: string) => {
-    const userData = await getUser(userId);
-    if (userData && userData.fridgeId) {
-      setFridgeData(userData);
-    } else {
-      router.push("/create-fridge");
-    }
+    router.push("/select-fridge");
   };
 
   const handleAuth = async (e: React.FormEvent) => {
