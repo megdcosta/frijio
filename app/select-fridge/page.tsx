@@ -117,7 +117,7 @@ export default function SelectFridgePage() {
           />
           <button
             onClick={handleJoinFridge}
-            className="bg-text text-white px-4 py-2 rounded-full w-full font-semibold font-sans"
+            className="bg-text text-white px-4 py-2 rounded-full w-full font-semibold font-sans hover:bg-[#5A4C47]"
           >
             Join Fridge
           </button>
@@ -134,7 +134,7 @@ export default function SelectFridgePage() {
           />
           <button
             onClick={handleCreateFridge}
-            className="bg-text text-white px-4 py-2 rounded-full w-full font-semibold font-sans"
+            className="bg-text text-white px-4 py-2 rounded-full w-full font-semibold font-sans hover:bg-[#5A4C47]"
           >
             Create New Fridge
           </button>
