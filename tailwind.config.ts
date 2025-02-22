@@ -15,6 +15,7 @@ export default {
       colors:{
         text: '#473c38',
         white: '#f1efd8',
+        green: '#729474',
         accent: '#ebb4bc',
         secondary: '#3d4e52',
         background: '#5e7a80',

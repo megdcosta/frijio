@@ -88,7 +88,7 @@ export default function AuthPage() {
               <p className="mb-8 font-semibold text-lg">Join us and take control of your fridge!</p>
               <button
                 onClick={() => setIsRegistering(true)}
-                className="border-2 border-white px-6 py-2 rounded-full hover:bg-white hover:text-[#5E7A80] transition"
+                className="border-2 border-white px-6 py-2 rounded-full font-semibold hover:bg-white hover:text-[#5E7A80] transition"
               >
                 Sign Up
               </button>
@@ -182,13 +182,13 @@ export default function AuthPage() {
               </form>
             </div>
             <div className="flex-1 bg-[#5E7A80] text-[#F1EFD8] flex flex-col items-center justify-center p-10 text-center">
-              <h2 className="text-3xl font-bold mb-2 font-playpen">
-                Welcome Back :)
+              <h2 className="text-3xl font-bold mb-2 font-playpen after:content-[':)']">
+                Welcome Back
               </h2>
               <p className="mb-8 font-semibold text-lg">Let us track your fridge!</p>
               <button
                 onClick={() => setIsRegistering(false)}
-                className="border-2 border-[#F1EFD8] px-6 py-2 rounded-full hover:bg-white hover:text-[#5E7A80] transition"
+                className="border-2 border-[#F1EFD8] px-6 py-2 rounded-full font-semibold hover:bg-white hover:text-[#5E7A80] transition"
               >
                 Sign In
               </button>
