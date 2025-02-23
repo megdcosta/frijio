@@ -228,7 +228,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
-    <div className="p-4 max-w-5xl mx-auto">
+    <div className="p-4 max-w-6xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Fridge Overview</h1>
 
       <div className="bg-green rounded-full mb-8 shadow-lg py-3">

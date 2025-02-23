@@ -46,13 +46,24 @@ const FridgePage = () => {
 
   return (
     <div className="min-h-screen bg-background text-[#F1EFD8] p-4 font-sans">
-      <header className="flex justify-between items-center p-6 pb-4">
+      <header className="flex justify-between items-center p-6 pb-6 px-4 py-2">
         <div className="text-2xl font-bold font-playpen">frij.io</div>
-      </header>
-      <div className="flex px-2 font-semibold">
-        <button className="m-4 pr-8 text-xl w-fit font-bold">
-          {fridge.name}
+        <button
+          onClick={logout}
+          className="bg-green-500 text-white rounded px-4 py-2"
+        >
+          Logout
         </button>
+      </header>
+
+      {/* Fridge title and ID above buttons */}
+      <div className="text-center mb-4">
+        <h1 className="text-2xl font-bold font-playpen">{fridge.name}</h1>
+        <p className="mt-2 text-sm text-gray-400">Fridge ID: {fridgeId}</p>
+      </div>
+
+      {/* Centered buttons */}
+      <div className="flex justify-center px-2 font-semibold">
         <button
           className={`m-4 py-2 px-12 w-fit text-center rounded-full text-white font-semibold hover:bg-[#4a5f64] transition ${
             activeTab === "overview" ? "bg-[#2d3c40]" : "bg-[#3d4e52]"
@@ -83,16 +94,6 @@ const FridgePage = () => {
         {activeTab === "overview" && <Overview fridgeId={fridgeId} />}
         {activeTab === "grocery" && <GroceryList fridgeId={fridgeId} />}
         {activeTab === "expense" && <Expense fridgeId={fridgeId} />}
-      </div>
-
-      <div className="mt-4 text-center">
-        <p className="text-lg">Fridge ID: {fridgeId}</p>
-        <button
-          onClick={logout}
-          className="bg-green-500 text-white px-4 py-2 rounded mt-4"
-        >
-          Logout
-        </button>
       </div>
     </div>
   );
