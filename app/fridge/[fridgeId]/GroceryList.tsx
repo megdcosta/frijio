@@ -9,7 +9,7 @@ import {
   getDocs,
   doc,
   deleteDoc,
-  serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
 
 interface GroceryItem {
@@ -17,7 +17,7 @@ interface GroceryItem {
   name: string;
   quantity: string;
   addedBy: string;
-  createdAt: any;
+  isChecked: boolean;
 }
 
 interface GroceryListProps {
@@ -25,6 +25,27 @@ interface GroceryListProps {
 }
 
 export default function GroceryList({ fridgeId }: GroceryListProps) {
+  // State to store the id of the checked item
+  const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>({});
+
+  // Handle checkbox state change
+  const handleCheckboxChange = async (itemId: string, currentState: boolean) => {
+    // Update local state
+    setCheckedItems((prev) => ({
+      ...prev,
+      [itemId]: !currentState, // Toggle the current checkbox state
+    }));
+    try {
+      // Update the Firestore document
+      const itemRef = doc(db, "groceryItems", itemId);
+      await updateDoc(itemRef, {
+        isChecked: !currentState ? true : false, // 1 (true) for checked, 0 (false) for unchecked
+      });
+    } catch (error) {
+      console.error("Error updating document: ", error);
+    }
+  };
+
   const { user } = useAuth();
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [newItem, setNewItem] = useState("");
@@ -42,7 +63,7 @@ export default function GroceryList({ fridgeId }: GroceryListProps) {
         name: doc.data().name,
         quantity: doc.data().quantity,
         addedBy: doc.data().addedBy,
-        createdAt: doc.data().createdAt,
+        isChecked: doc.data().isChecked,
       }));
       setItems(itemsData);
     } catch (err: any) {
@@ -57,6 +78,16 @@ export default function GroceryList({ fridgeId }: GroceryListProps) {
       fetchItems();
     }
   }, [fridgeId]);
+
+  useEffect(() => {
+    // Initialize the state with the current `isChecked` values from Firestore
+    const initialCheckedItems = items.reduce((acc, item) => {
+      acc[item.id] = item.isChecked;
+      return acc;
+    }, {} as { [key: string]: boolean });
+
+    setCheckedItems(initialCheckedItems);
+  }, [items]);
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,7 +105,6 @@ export default function GroceryList({ fridgeId }: GroceryListProps) {
         name: newItem.trim(),
         quantity: newQuantity.trim(),
         addedBy: user.uid,
-        createdAt: serverTimestamp(),
       });
 
       setNewItem("");
@@ -100,88 +130,94 @@ export default function GroceryList({ fridgeId }: GroceryListProps) {
   };
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
+    <div className="p-4 max-w-4xl mx-auto ">
       <h1 className="text-2xl font-bold mb-6">Grocery List</h1>
 
       {/* Add Item Form */}
-      <div className="bg-[#1F2A30] p-4 rounded-lg mb-8">
-        <h2 className="text-xl font-bold mb-4 text-[#F1EFD8]">Add New Item</h2>
+      <div className="bg-green rounded-full mb-8">
         {error && <p className="text-red-500 mb-4">{error}</p>}
-
-        <form onSubmit={handleAddItem} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[#F1EFD8] mb-2">Item Name</label>
-              <input
-                type="text"
-                value={newItem}
-                onChange={(e) => setNewItem(e.target.value)}
-                className="w-full p-2 rounded bg-[#3D4E52] border border-gray-600 text-[#F1EFD8]"
-                placeholder="Enter item name"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-[#F1EFD8] mb-2">Quantity</label>
-              <input
-                type="text"
-                value={newQuantity}
-                onChange={(e) => setNewQuantity(e.target.value)}
-                className="w-full p-2 rounded bg-[#3D4E52] border border-gray-600 text-[#F1EFD8]"
-                placeholder="Enter quantity"
-              />
-            </div>
+        <form onSubmit={handleAddItem} className="space-y-4 flex flex-wrap gap-4 items-center px-10">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <label className="block text-white mb-2 w-fit">Item Name</label>
+            <input
+              type="text"
+              value={newItem}
+              onChange={(e) => setNewItem(e.target.value)}
+              className="w-full p-2 rounded-full border border-text bg-white text-text placeholder-[#796d6d] indent-2"
+              placeholder="Enter item name"
+              required
+            />
+            <label className="block text-white mb-2">Quantity</label>
+            <input
+            type="text"
+            value={newQuantity}
+            onChange={(e) => setNewQuantity(e.target.value)}
+            className="w-full p-2 rounded-full border border-text bg-white text-text placeholder-[#796d6d] indent-2"
+            placeholder="Enter quantity"
+            />
+            <button
+              type="submit"
+              className="w-24 h-8 text-2xl bg-[#d28d82] text-white rounded-full font-bold hover:bg-[#db948a] transition shadow-sm flex items-center justify-center "
+              >
+              +
+            </button>
           </div>
-
-          <button
-            type="submit"
-            className="w-full bg-[#5E7A80] text-[#F1EFD8] py-2 rounded hover:bg-[#4A6065] transition"
-          >
-            Add Item
-          </button>
         </form>
       </div>
 
       {/* Grocery Items List */}
-      <div className="bg-[#1F2A30] p-4 rounded-lg">
-        <h2 className="text-xl font-bold mb-4 text-[#F1EFD8]">Current List</h2>
-
+      <div className="bg-white p-4 rounded-lg">
         {loading ? (
-          <p className="text-[#F1EFD8]">Loading items...</p>
+          <p className="text-text">Loading items...</p>
         ) : items.length === 0 ? (
-          <p className="text-[#F1EFD8]">No items in your grocery list</p>
+          <p className="text-text">No items in your grocery list</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-600 text-[#F1EFD8]">
+                <tr className="border-b border-text text-text">
+                  <th className="text-left p-2"></th>
                   <th className="text-left p-2">Item</th>
                   <th className="text-left p-2">Quantity</th>
                   <th className="text-left p-2">Added By</th>
-                  <th className="text-left p-2">Date Added</th>
-                  <th className="text-left p-2">Actions</th>
+                  <th className="text-left p-2"></th>
                 </tr>
               </thead>
               <tbody>
                 {items.map((item) => (
-                  <tr key={item.id} className="border-b border-gray-600">
-                    <td className="p-2 text-[#F1EFD8]">{item.name}</td>
-                    <td className="p-2 text-[#F1EFD8]">
+                  <tr key={item.id} className="border-b border-text">
+                    <td className="p-2">
+                      <label className="relative inline-block">
+                        <input
+                          type="checkbox"
+                          checked={checkedItems[item.id] || false} // Only check if the item is checked
+                          onChange={() => handleCheckboxChange(item.id, checkedItems[item.id])} // Toggle check state
+                          className="hidden"
+                        />
+                        {/* Custom circular checkbox */}
+                        <span
+                          className={`w-6 h-6 border-2 rounded-full transition-colors duration-300 bg-transparent border-text flex items-center justify-center`}
+                        >
+                          {/* Inner circle (white circle when checked) */}
+                          {checkedItems[item.id] && (
+                            <span className="w-3 h-3 bg-text rounded-full"></span>
+                          )}
+                        </span>
+                      </label>
+                    </td>
+                    <td className="p-2 text-text">{item.name}</td>
+                    <td className="p-2 text-text">
                       {item.quantity || "-"}
                     </td>
-                    <td className="p-2 text-[#F1EFD8]">
+                    <td className="p-2 text-text">
                       {item.addedBy === user?.uid ? "You" : item.addedBy}
-                    </td>
-                    <td className="p-2 text-[#F1EFD8]">
-                      {formatDate(item.createdAt)}
                     </td>
                     <td className="p-2">
                       <button
                         onClick={() => handleDeleteItem(item.id)}
-                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                        className="text-text px-3 py-1 rounded"
                       >
-                        Delete
+                        X
                       </button>
                     </td>
                   </tr>
