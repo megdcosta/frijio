@@ -45,37 +45,37 @@ const FridgePage = () => {
   if (!fridge) return <p>Loading fridge data...</p>;
 
   return (
-    <div className="min-h-screen bg-background text-[#F1EFD8] p-4">
-      <header className="flex justify-between items-center p-6">
+    <div className="min-h-screen bg-background text-[#F1EFD8] p-4 font-sans">
+      <header className="flex justify-between items-center p-6 pb-4">
         <div className="text-2xl font-bold font-playpen">frij.io</div>
       </header>
-      <div className="flex border-b">
-        <button className="p-2 font-bold">{fridge.name}</button>
+      <div className="flex px-2 font-semibold">
+        <button className="m-4 pr-8 text-xl w-fit font-bold">{fridge.name}</button>
         <button
-          className={`py-2 px-4 w-full text-center ${
+          className={`m-4 py-2 px-12 w-fit text-center rounded-full text-white font-semibold hover:bg-[#4a5f64] transition ${
             activeTab === "overview"
-              ? "border-b-2 border-blue-500 text-blue-500"
-              : "text-gray-500"
+              ? "bg-[#2d3c40]"
+              : "bg-[#3d4e52]"
           }`}
           onClick={() => setActiveTab("overview")}
         >
-          Overview
+          Fridge Overview
         </button>
         <button
-          className={`py-2 px-4 w-full text-center ${
+          className={`m-4 py-2 px-12 w-fit text-center rounded-full text-white font-semibold hover:bg-[#4a5f64] transition ${
             activeTab === "grocery"
-              ? "border-b-2 border-blue-500 text-blue-500"
-              : "text-gray-500"
+              ? "bg-[#2d3c40]"
+              : "bg-[#3d4e52]"
           }`}
           onClick={() => setActiveTab("grocery")}
         >
-          Grocery
+          Grocery List
         </button>
         <button
-          className={`py-2 px-4 w-full text-center ${
+          className={`m-4 py-2 px-12 w-fit text-center rounded-full text-white font-semibold hover:bg-[#4a5f64] transition ${
             activeTab === "expense"
-              ? "border-b-2 border-blue-500 text-blue-500"
-              : "text-gray-500"
+              ? "bg-[#2d3c40]"
+              : "bg-[#3d4e52]"
           }`}
           onClick={() => setActiveTab("expense")}
         >
