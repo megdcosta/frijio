@@ -31,7 +31,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
   const [itemName, setItemName] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [itemType, setItemType] = useState("");
+  const [itemType, setItemType] = useState(""); // <-- new field for type
 
   // ----------------- Editing State ----------------- //
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -54,6 +54,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
 
     const fetchFridgeData = async () => {
       try {
+        // 1) Fetch the fridge document
         const fridgeRef = doc(db, "fridges", fridgeId);
         const fridgeSnap = await getDoc(fridgeRef);
 
@@ -63,7 +64,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
         }
         setFridgeData({ id: fridgeSnap.id, ...fridgeSnap.data() });
 
-        // Fetch items
+        // 2) Fetch items in the fridge
         await refreshItems();
       } catch (err: any) {
         setError(err.message);
@@ -75,6 +76,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
 
   // ----------------- Helper Methods ----------------- //
 
+  // Refresh items after create, edit, or delete
   const refreshItems = async () => {
     try {
       const itemsRef = collection(db, "fridges", fridgeId, "items");
@@ -101,8 +103,8 @@ export default function Overview({ fridgeId }: OverviewProps) {
       const itemsRef = collection(db, "fridges", fridgeId, "items");
       await addDoc(itemsRef, {
         item_name: itemName,
-        expiration_date: expiryDate, // optional
-        amount: quantity,            // optional
+        expiration_date: expiryDate,
+        amount: quantity,
         type: itemType,
         created_at: serverTimestamp(),
         added_by: user.uid,
@@ -121,7 +123,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
     }
   };
 
-  // 2) Begin edit
+  // 2) Begin edit (populate the form with existing data)
   const handleEdit = (item: any) => {
     setEditingItem(item);
     setItemName(item.item_name || "");
@@ -153,12 +155,14 @@ export default function Overview({ fridgeId }: OverviewProps) {
         type: itemType,
       });
 
+      // Exit edit mode
       setEditingItem(null);
       setItemName("");
       setExpiryDate("");
       setQuantity("");
       setItemType("");
 
+      // Refresh items
       await refreshItems();
     } catch (err: any) {
       setError("Failed to update item: " + err.message);
@@ -180,6 +184,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
 
   // ----------------- Search & Sort ----------------- //
 
+  // Filter by search term
   const filteredItems = items.filter((item) =>
     item.item_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -211,18 +216,82 @@ export default function Overview({ fridgeId }: OverviewProps) {
         <p>Loading fridge data...</p>
       )}
 
-      {/* Add / Edit Form (moved to top) */}
-      <div className="bg-[#1F2A30] p-4 rounded-lg mb-6">
+      {/* Search Field */}
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="Search items..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="
+            p-2 rounded border border-gray-400 w-full 
+            text-black 
+            placeholder-gray-600
+          "
+        />
+      </div>
+
+      {/* Items Table */}
+      <div className="bg-[#1F2A30] p-4 rounded text-[#F1EFD8] overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-gray-600">
+              <th className="text-left p-2">Name</th>
+              <th className="text-left p-2">Type</th>
+              <th className="text-left p-2">Expiration Date</th>
+              <th className="text-left p-2">Amount</th>
+              <th className="text-left p-2">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedItems.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="text-center p-4">
+                  No items found.
+                </td>
+              </tr>
+            ) : (
+              sortedItems.map((item) => (
+                <tr key={item.id} className="border-b border-gray-600">
+                  <td className="p-2">{item.item_name || "N/A"}</td>
+                  <td className="p-2">{item.type || "N/A"}</td>
+                  <td className="p-2">{item.expiration_date || "N/A"}</td>
+                  <td className="p-2">{item.amount || "N/A"}</td>
+                  <td className="p-2 flex gap-2">
+                    <button
+                      onClick={() => handleEdit(item)}
+                      className="bg-blue-600 px-2 py-1 rounded text-white"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="bg-red-600 px-2 py-1 rounded text-white"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Add / Edit Form */}
+      <div className="mt-6 bg-[#1F2A30] p-4 rounded-lg">
         <h2 className="text-xl font-bold mb-4">
           {editingItem ? "Edit Item" : "Add New Item"}
         </h2>
+
         {error && <p className="text-red-500 mb-4">{error}</p>}
+
         <form
           onSubmit={editingItem ? handleSaveEdit : handleAddItem}
           className="space-y-4"
         >
           <div className="grid grid-cols-2 gap-4">
-            {/* Item Name (required) */}
+            {/* Item Name */}
             <input
               type="text"
               placeholder="Item Name"
@@ -232,16 +301,17 @@ export default function Overview({ fridgeId }: OverviewProps) {
               required
             />
 
-            {/* Quantity (optional) */}
+            {/* Quantity */}
             <input
               type="number"
               placeholder="Quantity"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               className="p-2 rounded bg-[#3D4E52] border border-gray-600 text-white"
+              required
             />
 
-            {/* Type (required) */}
+            {/* Type Dropdown */}
             <select
               value={itemType}
               onChange={(e) => setItemType(e.target.value)}
@@ -263,12 +333,13 @@ export default function Overview({ fridgeId }: OverviewProps) {
               <option value="Other">Other</option>
             </select>
 
-            {/* Expiration Date (optional) */}
+            {/* Expiration Date */}
             <input
               type="date"
               value={expiryDate}
               onChange={(e) => setExpiryDate(e.target.value)}
               className="p-2 rounded bg-[#3D4E52] border border-gray-600 text-white"
+              required
             />
           </div>
 
@@ -292,71 +363,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
             )}
           </div>
         </form>
-      </div>
-
-      {/* Search Field */}
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search items..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="
-            p-2 rounded border border-gray-400 w-full
-            text-black
-            placeholder-gray-600
-          "
-        />
-      </div>
-
-      {/* Items Table */}
-      <div className="bg-[#1F2A30] p-4 rounded text-[#F1EFD8] overflow-x-auto">
-        {/* Adjust max-h so it shows more rows before scrolling */}
-        <div className="max-h-[36rem] overflow-y-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-600">
-                <th className="text-left p-2">Name</th>
-                <th className="text-left p-2">Type</th>
-                <th className="text-left p-2">Expiration Date</th>
-                <th className="text-left p-2">Quantity</th>
-                <th className="text-left p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedItems.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="text-center p-4">
-                    No items found.
-                  </td>
-                </tr>
-              ) : (
-                sortedItems.map((item) => (
-                  <tr key={item.id} className="border-b border-gray-600">
-                    <td className="p-2">{item.item_name || "N/A"}</td>
-                    <td className="p-2">{item.type || "N/A"}</td>
-                    <td className="p-2">{item.expiration_date || "N/A"}</td>
-                    <td className="p-2">{item.amount || "N/A"}</td>
-                    <td className="p-2 flex gap-2">
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="bg-blue-600 px-2 py-1 rounded text-white"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="bg-red-600 px-2 py-1 rounded text-white"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
       </div>
     </div>
   );

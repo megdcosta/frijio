@@ -63,7 +63,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
         }
         setFridgeData({ id: fridgeSnap.id, ...fridgeSnap.data() });
 
-        // Fetch items
         await refreshItems();
       } catch (err: any) {
         setError(err.message);
@@ -102,19 +101,17 @@ export default function Overview({ fridgeId }: OverviewProps) {
       await addDoc(itemsRef, {
         item_name: itemName,
         expiration_date: expiryDate, // optional
-        amount: quantity,            // optional
+        amount: quantity, // optional
         type: itemType,
         created_at: serverTimestamp(),
         added_by: user.uid,
       });
 
-      // Clear the form
       setItemName("");
       setExpiryDate("");
       setQuantity("");
       setItemType("");
 
-      // Refresh items
       await refreshItems();
     } catch (err: any) {
       setError("Failed to add item: " + err.message);
@@ -184,7 +181,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
     item.item_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Sort by expiration date (earliest first)
   const sortedItems = filteredItems.sort((a, b) => {
     const dateA = new Date(a.expiration_date || "");
     const dateB = new Date(b.expiration_date || "");
@@ -198,10 +194,8 @@ export default function Overview({ fridgeId }: OverviewProps) {
 
   return (
     <div className="p-4">
-      {/* Page Title / Header */}
       <h1 className="text-2xl font-bold mb-4">Fridge Overview</h1>
 
-      {/* If fridge data found */}
       {fridgeData ? (
         <div className="mb-4 p-4 rounded shadow bg-white text-black">
           <h2 className="text-xl font-semibold">{fridgeData.name}</h2>
@@ -211,7 +205,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
         <p>Loading fridge data...</p>
       )}
 
-      {/* Add / Edit Form (moved to top) */}
+      {/* --- Add / Edit Form (moved to top) --- */}
       <div className="bg-[#1F2A30] p-4 rounded-lg mb-6">
         <h2 className="text-xl font-bold mb-4">
           {editingItem ? "Edit Item" : "Add New Item"}
@@ -245,11 +239,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
             <select
               value={itemType}
               onChange={(e) => setItemType(e.target.value)}
-              className="
-                p-2 rounded bg-[#3D4E52] border border-gray-600 text-white
-                max-h-48 
-                overflow-y-auto
-              "
+              className="p-2 rounded bg-[#3D4E52] border border-gray-600 text-white max-h-48 overflow-y-auto"
               required
             >
               <option value="">-- Select Type --</option>
@@ -294,31 +284,28 @@ export default function Overview({ fridgeId }: OverviewProps) {
         </form>
       </div>
 
-      {/* Search Field */}
+      {/* --- Search Field --- */}
       <div className="mb-4">
         <input
           type="text"
           placeholder="Search items..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="
-            p-2 rounded border border-gray-400 w-full
-            text-black
-            placeholder-gray-600
-          "
+          className="p-2 rounded border border-gray-400 w-full text-black placeholder-gray-600"
         />
       </div>
 
-      {/* Items Table */}
+      {/* --- Items Table --- */}
       <div className="bg-[#1F2A30] p-4 rounded text-[#F1EFD8] overflow-x-auto">
-        {/* Adjust max-h so it shows more rows before scrolling */}
-        <div className="max-h-[36rem] overflow-y-auto">
+        {/* Limit height so only ~15 items are visible before scrolling */}
+        <div className="max-h-96 overflow-y-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-600">
                 <th className="text-left p-2">Name</th>
                 <th className="text-left p-2">Type</th>
                 <th className="text-left p-2">Expiration Date</th>
+                {/* Renamed column from "Amount" to "Quantity" */}
                 <th className="text-left p-2">Quantity</th>
                 <th className="text-left p-2">Actions</th>
               </tr>
