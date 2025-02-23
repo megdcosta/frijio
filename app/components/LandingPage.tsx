@@ -36,6 +36,7 @@ export default function LandingPage() {
             Get Started
           </button>
         </section>
+
         {/* Features Section */}
         <section className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 text-center font-sans font-semibold">
           {/* Fridge Management */}
@@ -72,7 +73,7 @@ export default function LandingPage() {
             </div>
             <p>
               Collaborate with roommates to create and update a shared shopping
-              list—with links to local stores for added convenience.
+              list— with links to local stores for added convenience.
             </p>
           </div>
 
@@ -94,6 +95,31 @@ export default function LandingPage() {
               the loop on who paid and who owes.
             </p>
           </div>
+        </section>
+
+        {/* AI Features Section */}
+        <section className="mt-16 text-center max-w-3xl font-sans">
+          <h2 className="text-3xl font-bold mb-4">Smart AI Features</h2>
+          <p className="text-xl mb-6">
+            Harnessing the power of AI, frij.io revolutionizes your kitchen
+            management. Our intelligent receipt scanning technology instantly
+            logs your groceries, saving you valuable time. Plus, our AI-driven
+            dish generation suggests creative meal ideas based on the
+            ingredients you currently have, helping you make the most out of
+            your available resources.
+          </p>
+        </section>
+
+        {/* Our Mission Section */}
+        <section className="mt-16 text-center max-w-3xl font-sans">
+          <h2 className="text-3xl font-bold mb-4">Our Mission</h2>
+          <p className="text-xl mb-6">
+            Developed in response to the unique challenges facing Canada,
+            frij.io is committed to reducing food waste and alleviating food
+            shortages. By providing real-time insights into your pantry and
+            fridge, we empower you to make smarter purchasing decisions,
+            fostering a more sustainable and informed community.
+          </p>
         </section>
 
         {/* Team Section */}
