@@ -1,5 +1,5 @@
 import { db } from "./firebaseConfig";
-import { collection, addDoc, getDoc, setDoc, updateDoc, doc, arrayUnion } from "firebase/firestore";
+import { collection, addDoc, getDoc, setDoc, updateDoc, doc, arrayUnion, deleteDoc } from "firebase/firestore";
 
 // 🧑‍💻 Get User Data (Supports Multiple Fridges)
 export const getUser = async (userId: string) => {
@@ -68,4 +68,10 @@ export const joinFridgeById = async (userId: string, fridgeId: string) => {
 
   // Add the fridge to user's list
   await assignFridgeToUser(userId, fridgeId);
+};
+
+// Add this to your firestore.ts
+export const deleteItem = async (fridgeId: string, itemId: string) => {
+  const itemRef = doc(db, "fridges", fridgeId, "items", itemId);
+  await deleteDoc(itemRef);
 };
