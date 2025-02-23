@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     let result;
     try {
       result = JSON.parse(content);
-    } catch {
+    } catch (e) {
       throw new Error('Failed to parse AI response');
     }
 
