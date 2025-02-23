@@ -135,7 +135,7 @@ export default function GroceryList({ fridgeId }: GroceryListProps) {
   };
 
   return (
-    <div className="p-4 max-w-6xl mx-auto ">
+    <div className="p-4 max-w-7xl mx-auto ">
       <h1 className="text-2xl font-bold mb-6">Grocery List</h1>
 
       {/* Add Item Form */}
@@ -223,7 +223,7 @@ export default function GroceryList({ fridgeId }: GroceryListProps) {
                     <td className="p-2">
                       <button
                         onClick={() => handleDeleteItem(item.id)}
-                        className="text-text px-3 py-1 rounded"
+                        className="text-text px-3 py-1 rounded hover:text-red-500"
                       >
                         X
                       </button>

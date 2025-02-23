@@ -1,6 +1,5 @@
 "use client";
 
-import { deleteItem } from "@/app/firebase/firestore";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../hooks/useAuth";
@@ -11,8 +10,10 @@ import {
   collection,
   getDocs,
   addDoc,
+  updateDoc,
   serverTimestamp,
 } from "firebase/firestore";
+import { deleteItem } from "@/app/firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import axios from "axios";
 
@@ -35,50 +36,36 @@ interface RecipeRecommendation {
 export default function Overview({ fridgeId }: OverviewProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
+
   const [fridgeData, setFridgeData] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
   const [error, setError] = useState("");
+
+  // Form states for adding a new item
+  const [itemName, setItemName] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [type, setType] = useState("");
+
+  // Scanning states
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<ScannedItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Recommendation states
   const [recommendations, setRecommendations] = useState<
     RecipeRecommendation[]
   >([]);
   const [isRecommending, setIsRecommending] = useState(false);
   const [showRecommendations, setShowRecommendations] = useState(false);
 
-  const [itemName, setItemName] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
-  const [quantity, setQuantity] = useState("");
-  const [purchaseDate, setPurchaseDate] = useState("");
-
-  const fetchItems = async () => {
-    if (!fridgeId) return;
-    try {
-      const itemsRef = collection(db, "fridges", fridgeId, "items");
-      const snapshot = await getDocs(itemsRef);
-      const itemsList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setItems(itemsList);
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  const handleDeleteItem = async (itemId: string) => {
-    if (!window.confirm("Are you sure you want to delete this item?")) return;
-
-    try {
-      await deleteItem(fridgeId, itemId);
-      await fetchItems();
-    } catch (error) {
-      console.error("Delete error:", error);
-      setError("Failed to delete item");
-    }
-  };
+  // Editing states
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [editingType, setEditingType] = useState("");
+  const [editingQuantity, setEditingQuantity] = useState("");
+  const [editingExpiry, setEditingExpiry] = useState("");
 
   useEffect(() => {
     if (!user && !loading) {
@@ -105,8 +92,27 @@ export default function Overview({ fridgeId }: OverviewProps) {
 
     fetchFridge();
     fetchItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fridgeId]);
 
+  const fetchItems = async () => {
+    if (!fridgeId) return;
+    try {
+      const itemsRef = collection(db, "fridges", fridgeId, "items");
+      const snapshot = await getDocs(itemsRef);
+      const itemsList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setItems(itemsList);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  // -----------------------
+  // Add New Item
+  // -----------------------
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -116,9 +122,9 @@ export default function Overview({ fridgeId }: OverviewProps) {
       const itemsRef = collection(db, "fridges", fridgeId, "items");
       await addDoc(itemsRef, {
         item_name: itemName,
-        expiration_date: expiryDate,
-        amount: quantity,
-        purchase_date: purchaseDate,
+        expiration_date: expiryDate || "",
+        amount: quantity || "",
+        type: type,
         created_at: serverTimestamp(),
         added_by: user.uid,
       });
@@ -126,7 +132,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
       setItemName("");
       setExpiryDate("");
       setQuantity("");
-      setPurchaseDate("");
+      setType("");
       await fetchItems();
     } catch (err: any) {
       console.error("Firestore Error:", err);
@@ -134,9 +140,61 @@ export default function Overview({ fridgeId }: OverviewProps) {
     }
   };
 
+  // -----------------------
+  // Delete Item
+  // -----------------------
+  const handleDeleteItem = async (itemId: string) => {
+    if (!window.confirm("Are you sure you want to delete this item?")) return;
+    try {
+      await deleteItem(fridgeId, itemId);
+      await fetchItems();
+    } catch (error) {
+      console.error("Delete error:", error);
+      setError("Failed to delete item");
+    }
+  };
+
+  // -----------------------
+  // Edit Item (toggle/edit)
+  // -----------------------
+  const startEditItem = (item: any) => {
+    setEditingItemId(item.id);
+    setEditingName(item.item_name || "");
+    setEditingType(item.type || "");
+    setEditingQuantity(item.amount || "");
+    setEditingExpiry(item.expiration_date || "");
+  };
+
+  const cancelEditItem = () => {
+    setEditingItemId(null);
+    setEditingName("");
+    setEditingType("");
+    setEditingQuantity("");
+    setEditingExpiry("");
+  };
+
+  const handleUpdateItem = async (itemId: string) => {
+    try {
+      const itemRef = doc(db, "fridges", fridgeId, "items", itemId);
+      await updateDoc(itemRef, {
+        item_name: editingName,
+        expiration_date: editingExpiry,
+        amount: editingQuantity,
+        type: editingType,
+      });
+      cancelEditItem();
+      await fetchItems();
+    } catch (err) {
+      console.error("Update error:", err);
+      setError("Failed to update item");
+    }
+  };
+
+  // -----------------------
+  // Scan Receipt
+  // -----------------------
   const handleScanReceipt = async () => {
     if (!selectedFile || !user) return;
-
     setIsProcessing(true);
     try {
       const storageRef = ref(storage, `receipts/${user.uid}/${Date.now()}`);
@@ -184,7 +242,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
         item_name: item.name,
         expiration_date: item.expiryDate,
         amount: item.quantity,
-        purchase_date: new Date().toISOString().split("T")[0],
+        type: "Other",
         created_at: serverTimestamp(),
         added_by: user?.uid,
       });
@@ -195,9 +253,11 @@ export default function Overview({ fridgeId }: OverviewProps) {
     }
   };
 
+  // -----------------------
+  // Recommendations
+  // -----------------------
   const handleGetRecommendations = async () => {
     if (!items.length) return;
-
     setIsRecommending(true);
     setError("");
 
@@ -228,11 +288,13 @@ export default function Overview({ fridgeId }: OverviewProps) {
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
+    <div className="p-4 max-w-7xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Fridge Overview</h1>
 
+      {/* ------------------------
+          Add New Item Form
+      ------------------------ */}
       <div className="bg-green rounded-full mb-8 shadow-lg py-3">
-        {error && <p className="text-red-500 mb-4 px-10">{error}</p>}
         <form
           onSubmit={handleAddItem}
           className="flex flex-wrap gap-4 items-center px-10"
@@ -247,7 +309,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
               className="w-52 p-2 rounded-full border border-text bg-white text-text placeholder-[#796d6d] indent-2"
               required
             />
-
             <label className="block text-white">Quantity</label>
             <input
               type="number"
@@ -257,7 +318,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
               className="w-52 p-2 rounded-full border border-text bg-white text-text placeholder-[#796d6d] indent-2"
               required
             />
-
             <label className="block text-white">Expiry</label>
             <input
               type="date"
@@ -266,7 +326,22 @@ export default function Overview({ fridgeId }: OverviewProps) {
               className="w-52 p-2 rounded-full border border-text bg-white text-text px-4"
               required
             />
-
+            <label className="block text-white">Type</label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="w-52 p-2 rounded-full border border-text bg-white text-text placeholder-[#796d6d] indent-2"
+            >
+              <option value="">Select Type</option>
+              <option value="Eggs/Dairy">Eggs/Dairy</option>
+              <option value="Fruits">Fruits</option>
+              <option value="Vegetables">Vegetables</option>
+              <option value="Meat">Meat</option>
+              <option value="Leftovers">Leftovers</option>
+              <option value="Frozen">Frozen</option>
+              <option value="Sauces/Condiments">Sauces/Condiments</option>
+              <option value="Other">Other</option>
+            </select>
             <button
               type="submit"
               className="w-10 h-10 text-2xl bg-[#d28d82] text-white rounded-full font-bold hover:bg-[#db948a] transition shadow-sm flex items-center justify-center"
@@ -277,6 +352,9 @@ export default function Overview({ fridgeId }: OverviewProps) {
         </form>
       </div>
 
+      {/* ------------------------
+          Fridge Items List
+      ------------------------ */}
       <div className="bg-white p-4 rounded-lg shadow-lg mb-8">
         <h2 className="text-xl font-bold mb-4 text-text">Items List</h2>
         <div className="overflow-x-auto">
@@ -284,50 +362,128 @@ export default function Overview({ fridgeId }: OverviewProps) {
             <thead>
               <tr className="border-b border-text text-text">
                 <th className="text-left p-2">Name</th>
-                <th className="text-left p-2">Description</th>
                 <th className="text-left p-2">Type</th>
-                <th className="text-left p-2">Storage</th>
                 <th className="text-left p-2">Expiration</th>
-                <th className="text-left p-2">Amount</th>
-                <th className="text-left p-2"></th>
+                <th className="text-left p-2">Quantity</th>
+                <th className="p-2"></th>
+                <th className="p-2"></th>
               </tr>
             </thead>
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="text-center p-4 text-text">
-                    No items found
+                  <td colSpan={6} className="text-center p-4 text-text">
+                    No items found.
                   </td>
                 </tr>
               ) : (
-                items.map((item) => (
-                  <tr key={item.id} className="border-b border-text">
-                    <td className="p-2 text-text">{item.item_name || "N/A"}</td>
-                    <td className="p-2 text-text">
-                      {item.description || "N/A"}
-                    </td>
-                    <td className="p-2 text-text">{item.type || "N/A"}</td>
-                    <td className="p-2 text-text">{item.storage || "N/A"}</td>
-                    <td className="p-2 text-text">
-                      {item.expiration_date || "N/A"}
-                    </td>
-                    <td className="p-2 text-text">{item.amount || "N/A"}</td>
-                    <td className="p-2">
-                      <button
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="text-text px-3 py-1 rounded"
-                      >
-                        X
-                      </button>
-                    </td>
-                  </tr>
-                ))
+                items.map((item) => {
+                  if (editingItemId === item.id) {
+                    return (
+                      <tr key={item.id} className="border-b border-text">
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            className="w-full p-2 bg-transparent text-text rounded-full border border-text px-4"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <select
+                            value={editingType}
+                            onChange={(e) => setEditingType(e.target.value)}
+                            className="w-full p-2 bg-transparent text-text rounded-full border border-text px-4"
+                          >
+                            <option value="">Select Type</option>
+                            <option value="Eggs/Dairy">Eggs/Dairy</option>
+                            <option value="Fruits">Fruits</option>
+                            <option value="Vegetables">Vegetables</option>
+                            <option value="Meat">Meat</option>
+                            <option value="Leftovers">Leftovers</option>
+                            <option value="Frozen">Frozen</option>
+                            <option value="Sauces/Condiments">
+                              Sauces/Condiments
+                            </option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="date"
+                            value={editingExpiry}
+                            onChange={(e) => setEditingExpiry(e.target.value)}
+                            className="w-full p-2 bg-transparent text-text rounded-full border border-text px-4"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            value={editingQuantity}
+                            onChange={(e) => setEditingQuantity(e.target.value)}
+                            className="w-full p-2 bg-transparent text-text rounded-full border border-text px-4"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <button
+                            onClick={() => handleUpdateItem(item.id)}
+                            className="w-10 h-10 text-2xl bg-[#d28d82] text-white rounded-full font-bold hover:bg-[#db948a] transition shadow-sm flex items-center justify-center"
+                          >
+                            ✓
+                          </button>
+                        </td>
+                        <td className="p-2">
+                          <button
+                            onClick={cancelEditItem}
+                            className="text-text hover:text-[#d28d82] px-3 py-1 rounded"
+                          >
+                            ×
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  } else {
+                    return (
+                      <tr key={item.id} className="border-b border-text">
+                        <td className="p-2 text-text">
+                          {item.item_name || "N/A"}
+                        </td>
+                        <td className="p-2 text-text">{item.type || "N/A"}</td>
+                        <td className="p-2 text-text">
+                          {item.expiration_date || "N/A"}
+                        </td>
+                        <td className="p-2 text-text">
+                          {item.amount || "N/A"}
+                        </td>
+                        <td className="p-2">
+                          <button
+                            onClick={() => startEditItem(item)}
+                            className="text-text px-3 py-1 rounded hover:text-[#d28d82]"
+                          >
+                            Edit
+                          </button>
+                        </td>
+                        <td className="p-2">
+                          <button
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="text-text px-3 py-1 rounded hover:text-red-500"
+                          >
+                            X
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  }
+                })
               )}
             </tbody>
           </table>
         </div>
       </div>
 
+      {/* ------------------------
+          Receipt Scanning
+      ------------------------ */}
       <div className="bg-white p-4 rounded-lg shadow-lg mb-8">
         <h2 className="text-xl font-bold mb-4 text-text">Scan Receipt</h2>
         <div className="flex items-center gap-4">
@@ -346,7 +502,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
           >
             {selectedFile ? selectedFile.name : "Select Receipt"}
           </label>
-
           {selectedFile && (
             <button
               onClick={handleScanReceipt}
@@ -357,7 +512,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
             </button>
           )}
         </div>
-
         {isScanning && scanResult.length > 0 && (
           <div className="mt-4">
             <h3 className="text-lg font-semibold mb-2 text-text">
@@ -407,6 +561,9 @@ export default function Overview({ fridgeId }: OverviewProps) {
         )}
       </div>
 
+      {/* ------------------------
+          Recipe Suggestions
+      ------------------------ */}
       <div className="bg-white p-4 rounded-lg shadow-lg">
         <h2 className="text-xl font-bold mb-4 text-text">Recipe Suggestions</h2>
         <button
@@ -416,7 +573,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
         >
           {isRecommending ? "Generating..." : "Suggest Recipes"}
         </button>
-
         {showRecommendations && (
           <div className="mt-4 p-4 bg-gray-100 rounded-lg">
             <div className="flex justify-between items-center mb-4">

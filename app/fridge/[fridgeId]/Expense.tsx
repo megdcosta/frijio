@@ -115,7 +115,7 @@ export default function Expenses({ fridgeId }: ExpenseProps) {
   };
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
+    <div className="p-4 max-w-7xl mx-auto">
       <h1 className="text-2xl font-bold mb-6">Expense Tracking</h1>
 
       {/* Add Expense Form */}
