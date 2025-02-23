@@ -9,8 +9,13 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-[#F1EFD8] p-4">
       {/* Header */}
-      <header className="flex justify-between items-center p-6">
-        <div className="text-2xl font-bold font-playpen">frij.io</div>
+      <header className="flex justify-between items-center p-6 pb-6 px-4 py-2">
+        <div
+          className="text-2xl font-bold font-playpen cursor-pointer"
+          onClick={() => router.push("/")}
+        >
+          frij.io
+        </div>
       </header>
 
       {/* Hero Section */}
