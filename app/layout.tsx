@@ -15,7 +15,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "frij.io",
   description:
-    "Eleazar, Emily, Megan, and Leon built frij.io during Hack Canada 2025 @ Wilfrid Laurier University.",
+  "Eleazar, Emily, Megan, and Leon built frij.io during Hack Canada 2025 @ Wilfrid Laurier University.",
+  icons: {
+    icon: "/images/favicon.ico", // Path to your favicon.ico file in the public directory
+  },
 };
 
 export default function RootLayout({
@@ -25,6 +28,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Favicon */}
+        <link rel="icon" href="/images/favicon.ico" />
+        {/* You can also add other sizes/formats */}
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
