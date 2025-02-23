@@ -14,7 +14,7 @@ export default function SelectFridgePage() {
   const [fridgeId, setFridgeId] = useState("");
   const [userFridges, setUserFridges] = useState<any[]>([]);
   const [error, setError] = useState("");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false); 
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedFridge, setSelectedFridge] = useState<any>(null);
 
   useEffect(() => {
@@ -98,7 +98,7 @@ export default function SelectFridgePage() {
                 {userFridges.map((fridge) => (
                   <li
                     key={fridge.id}
-                    className="cursor-pointer p-2 hover:bg-gray-200 rounded"
+                    className="cursor-pointer p-2 hover:bg-gray-200 rounded text-center"
                     onClick={() => handleSelectFridge(fridge)}
                   >
                     {fridge.name}
@@ -112,7 +112,9 @@ export default function SelectFridgePage() {
 
       {/* Option to Join a Fridge by Entering an ID */}
       <div className="bg-white py-16 px-24 rounded-[35px] shadow-sm mb-6 w-full max-w-xl grid place-items-center">
-        <h1 className="text-3xl font-bold mb-4 font-playpen text-text">Add a Fridge</h1>
+        <h1 className="text-3xl font-bold mb-4 font-playpen text-text">
+          Add a Fridge
+        </h1>
 
         <input
           type="text"
