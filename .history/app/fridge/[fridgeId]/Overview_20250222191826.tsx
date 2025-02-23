@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "../../hooks/useAuth";
-import { db } from "../../firebase/firebaseConfig";
+import { useAuth } from "../../hooks/useAuth"; // Adjust path if necessary
+import { db } from "../../firebase/firebaseConfig"; // Adjust path if necessary
 import {
   doc,
   getDoc,
@@ -23,76 +23,70 @@ export default function Overview({ fridgeId }: OverviewProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
+  // State for fridge meta and error messages
   const [fridgeData, setFridgeData] = useState<any>(null);
-  const [items, setItems] = useState<any[]>([]);
   const [error, setError] = useState("");
 
-  // ----------------- Form State ----------------- //
+  // State for items
+  const [items, setItems] = useState<any[]>([]);
+
+  // Form state (Add/Edit)
   const [itemName, setItemName] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [quantity, setQuantity] = useState("");
   const [purchaseDate, setPurchaseDate] = useState("");
 
-  // ----------------- Editing State ----------------- //
+  // Editing state
   const [editingItem, setEditingItem] = useState<any>(null);
 
-  // ----------------- Search State ----------------- //
+  // Search state
   const [searchTerm, setSearchTerm] = useState("");
 
-  // ----------------- Effects ----------------- //
+  // ------------------ Lifecycle Hooks ------------------ //
 
-  // Redirect to login if not authenticated
   useEffect(() => {
+    // Redirect to /login if no user
     if (!user && !loading) {
       router.push("/login");
     }
   }, [user, loading, router]);
 
-  // Fetch fridge info and items
+  // Fetch fridge info & items once fridgeId is available
   useEffect(() => {
     if (!fridgeId) return;
 
-    const fetchFridgeData = async () => {
+    const fetchFridgeAndItems = async () => {
       try {
-        // Fetch the fridge document
+        // 1) Get the fridge document
         const fridgeRef = doc(db, "fridges", fridgeId);
         const fridgeSnap = await getDoc(fridgeRef);
-        if (!fridgeSnap.exists()) {
+
+        if (fridgeSnap.exists()) {
+          setFridgeData({ id: fridgeSnap.id, ...fridgeSnap.data() });
+        } else {
           setError("Fridge not found.");
           return;
         }
-        setFridgeData({ id: fridgeSnap.id, ...fridgeSnap.data() });
 
-        // Fetch items in the fridge
-        await refreshItems();
+        // 2) Get the items sub-collection
+        const itemsRef = collection(db, "fridges", fridgeId, "items");
+        const snapshot = await getDocs(itemsRef);
+        const itemsList = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setItems(itemsList);
       } catch (err: any) {
         setError(err.message);
       }
     };
 
-    fetchFridgeData();
+    fetchFridgeAndItems();
   }, [fridgeId]);
 
-  // ----------------- Helper Methods ----------------- //
+  // ------------------ CRUD Handlers ------------------ //
 
-  // Refresh items after create, edit, or delete
-  const refreshItems = async () => {
-    try {
-      const itemsRef = collection(db, "fridges", fridgeId, "items");
-      const snapshot = await getDocs(itemsRef);
-      const itemsList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setItems(itemsList);
-    } catch (err: any) {
-      setError(err.message);
-    }
-  };
-
-  // ----------------- CRUD Operations ----------------- //
-
-  // 1) Add item
+  // Add a new item
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!fridgeId || !user) return;
@@ -109,7 +103,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
         added_by: user.uid,
       });
 
-      // Clear the form
+      // Reset form
       setItemName("");
       setExpiryDate("");
       setQuantity("");
@@ -122,8 +116,9 @@ export default function Overview({ fridgeId }: OverviewProps) {
     }
   };
 
-  // 2) Begin edit (populate the form with existing data)
+  // Edit an existing item (sets up form fields)
   const handleEdit = (item: any) => {
+    setError("");
     setEditingItem(item);
     setItemName(item.item_name || "");
     setExpiryDate(item.expiration_date || "");
@@ -131,7 +126,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
     setPurchaseDate(item.purchase_date || "");
   };
 
-  // 3) Cancel edit
+  // Cancel edit mode
   const handleCancelEdit = () => {
     setEditingItem(null);
     setItemName("");
@@ -140,11 +135,10 @@ export default function Overview({ fridgeId }: OverviewProps) {
     setPurchaseDate("");
   };
 
-  // 4) Save changes
+  // Save the edited item
   const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingItem || !fridgeId) return;
-
     try {
       const itemRef = doc(db, "fridges", fridgeId, "items", editingItem.id);
       await updateDoc(itemRef, {
@@ -154,23 +148,24 @@ export default function Overview({ fridgeId }: OverviewProps) {
         purchase_date: purchaseDate,
       });
 
-      // Exit edit mode
+      // Exit edit mode and clear form
       setEditingItem(null);
       setItemName("");
       setExpiryDate("");
       setQuantity("");
       setPurchaseDate("");
 
-      // Refresh
+      // Refresh items
       await refreshItems();
     } catch (err: any) {
       setError("Failed to update item: " + err.message);
     }
   };
 
-  // 5) Delete item
+  // Delete an existing item
   const handleDelete = async (itemId: string) => {
     if (!fridgeId || !user) return;
+    // Optional: confirm deletion
     if (!confirm("Are you sure you want to delete this item?")) return;
 
     try {
@@ -181,31 +176,58 @@ export default function Overview({ fridgeId }: OverviewProps) {
     }
   };
 
-  // ----------------- Search & Sort ----------------- //
+  // ------------------ Utility Methods ------------------ //
 
-  // Filter by search term
+  // Helper to refresh items after add/edit/delete
+  const refreshItems = async () => {
+    try {
+      const itemsRef = collection(db, "fridges", fridgeId, "items");
+      const snapshot = await getDocs(itemsRef);
+      const itemsList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setItems(itemsList);
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  // ------------------ Derived Data ------------------ //
+
+  // Filter the items by searchTerm
   const filteredItems = items.filter((item) =>
     item.item_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Sort by expiration date (earliest first)
+  // Sort by soonest expiration date
   const sortedItems = filteredItems.sort((a, b) => {
     const dateA = new Date(a.expiration_date || "");
     const dateB = new Date(b.expiration_date || "");
     return dateA.getTime() - dateB.getTime();
   });
 
-  // ----------------- Rendering ----------------- //
+  // ------------------ Render ------------------ //
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div className="p-4">
-      {/* Page Title / Header */}
-      <h1 className="text-2xl font-bold mb-4">Fridge Overview</h1>
+      {/* -------------- Example Tabs -------------- */}
+      <nav className="flex space-x-4 mb-6">
+        <button className="bg-[#1F2A30] text-white px-4 py-2 rounded border border-white">
+          Fridge Overview
+        </button>
+        <button className="bg-[#1F2A30] text-white px-4 py-2 rounded border border-white">
+          Grocery List
+        </button>
+        <button className="bg-[#1F2A30] text-white px-4 py-2 rounded border border-white">
+          Expenses
+        </button>
+      </nav>
 
-      {/* If fridge data found */}
+      {/* -------------- Fridge Info -------------- */}
       {fridgeData ? (
         <div className="mb-4 p-4 rounded shadow bg-white text-black">
           <h2 className="text-xl font-semibold">{fridgeData.name}</h2>
@@ -215,7 +237,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
         <p>Loading fridge data...</p>
       )}
 
-      {/* Search Field */}
+      {/* -------------- Search Field -------------- */}
       <div className="mb-4">
         <input
           type="text"
@@ -223,14 +245,14 @@ export default function Overview({ fridgeId }: OverviewProps) {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="
-            p-2 rounded border border-gray-400 w-full 
+            p-2 rounded border border-gray-400 w-full
             text-black 
             placeholder-gray-600
           "
         />
       </div>
 
-      {/* Items Table */}
+      {/* -------------- Items Table -------------- */}
       <div className="bg-[#1F2A30] p-4 rounded text-[#F1EFD8] overflow-x-auto">
         <table className="w-full">
           <thead>
@@ -275,12 +297,11 @@ export default function Overview({ fridgeId }: OverviewProps) {
         </table>
       </div>
 
-      {/* Add / Edit Form */}
+      {/* -------------- Add/Edit Form -------------- */}
       <div className="mt-6 bg-[#1F2A30] p-4 rounded-lg">
         <h2 className="text-xl font-bold mb-4">
           {editingItem ? "Edit Item" : "Add New Item"}
         </h2>
-
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
         <form
@@ -327,7 +348,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
             >
               {editingItem ? "Save" : "Add"}
             </button>
-
             {editingItem && (
               <button
                 type="button"

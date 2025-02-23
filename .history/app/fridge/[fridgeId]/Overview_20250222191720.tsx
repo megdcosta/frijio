@@ -10,9 +10,9 @@ import {
   collection,
   getDocs,
   addDoc,
-  updateDoc,
-  deleteDoc,
   serverTimestamp,
+  deleteDoc,
+  updateDoc,
 } from "firebase/firestore";
 
 interface OverviewProps {
@@ -22,61 +22,25 @@ interface OverviewProps {
 export default function Overview({ fridgeId }: OverviewProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
-
   const [fridgeData, setFridgeData] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
   const [error, setError] = useState("");
 
-  // ----------------- Form State ----------------- //
+  // Form state
   const [itemName, setItemName] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [quantity, setQuantity] = useState("");
   const [purchaseDate, setPurchaseDate] = useState("");
 
-  // ----------------- Editing State ----------------- //
-  const [editingItem, setEditingItem] = useState<any>(null);
-
-  // ----------------- Search State ----------------- //
+  // Search state
   const [searchTerm, setSearchTerm] = useState("");
 
-  // ----------------- Effects ----------------- //
+  // Editing state
+  const [editingItem, setEditingItem] = useState<any>(null);
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!user && !loading) {
-      router.push("/login");
-    }
-  }, [user, loading, router]);
-
-  // Fetch fridge info and items
-  useEffect(() => {
+  // Fetch all items
+  const fetchItems = async () => {
     if (!fridgeId) return;
-
-    const fetchFridgeData = async () => {
-      try {
-        // Fetch the fridge document
-        const fridgeRef = doc(db, "fridges", fridgeId);
-        const fridgeSnap = await getDoc(fridgeRef);
-        if (!fridgeSnap.exists()) {
-          setError("Fridge not found.");
-          return;
-        }
-        setFridgeData({ id: fridgeSnap.id, ...fridgeSnap.data() });
-
-        // Fetch items in the fridge
-        await refreshItems();
-      } catch (err: any) {
-        setError(err.message);
-      }
-    };
-
-    fetchFridgeData();
-  }, [fridgeId]);
-
-  // ----------------- Helper Methods ----------------- //
-
-  // Refresh items after create, edit, or delete
-  const refreshItems = async () => {
     try {
       const itemsRef = collection(db, "fridges", fridgeId, "items");
       const snapshot = await getDocs(itemsRef);
@@ -90,14 +54,65 @@ export default function Overview({ fridgeId }: OverviewProps) {
     }
   };
 
-  // ----------------- CRUD Operations ----------------- //
+  // Delete an item
+  const handleDelete = async (itemId: string) => {
+    if (!fridgeId || !user) return;
+    if (!confirm("Are you sure you want to delete this item?")) return;
+    try {
+      await deleteDoc(doc(db, "fridges", fridgeId, "items", itemId));
+      await fetchItems();
+    } catch (err: any) {
+      setError("Error deleting item: " + err.message);
+    }
+  };
 
-  // 1) Add item
+  // Begin editing: fill the form with the selected item’s data
+  const handleEdit = (item: any) => {
+    setError("");
+    setEditingItem(item);
+    setItemName(item.item_name || "");
+    setQuantity(item.amount || "");
+    setExpiryDate(item.expiration_date || "");
+    setPurchaseDate(item.purchase_date || "");
+  };
+
+  // Cancel editing
+  const handleCancelEdit = () => {
+    setEditingItem(null);
+    setItemName("");
+    setExpiryDate("");
+    setQuantity("");
+    setPurchaseDate("");
+  };
+
+  // Save edits to Firestore
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingItem || !fridgeId || !user) return;
+    try {
+      const itemRef = doc(db, "fridges", fridgeId, "items", editingItem.id);
+      await updateDoc(itemRef, {
+        item_name: itemName,
+        expiration_date: expiryDate,
+        amount: quantity,
+        purchase_date: purchaseDate,
+      });
+      setEditingItem(null);
+      setItemName("");
+      setExpiryDate("");
+      setQuantity("");
+      setPurchaseDate("");
+      await fetchItems();
+    } catch (err: any) {
+      setError("Error saving changes: " + err.message);
+    }
+  };
+
+  // Add a new item
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fridgeId || !user) return;
     setError("");
-
+    if (!fridgeId || !user) return;
     try {
       const itemsRef = collection(db, "fridges", fridgeId, "items");
       await addDoc(itemsRef, {
@@ -108,82 +123,43 @@ export default function Overview({ fridgeId }: OverviewProps) {
         created_at: serverTimestamp(),
         added_by: user.uid,
       });
-
-      // Clear the form
       setItemName("");
       setExpiryDate("");
       setQuantity("");
       setPurchaseDate("");
-
-      // Refresh items
-      await refreshItems();
+      await fetchItems();
     } catch (err: any) {
+      console.error("Firestore Error:", err);
       setError("Failed to add item: " + err.message);
     }
   };
 
-  // 2) Begin edit (populate the form with existing data)
-  const handleEdit = (item: any) => {
-    setEditingItem(item);
-    setItemName(item.item_name || "");
-    setExpiryDate(item.expiration_date || "");
-    setQuantity(item.amount || "");
-    setPurchaseDate(item.purchase_date || "");
-  };
-
-  // 3) Cancel edit
-  const handleCancelEdit = () => {
-    setEditingItem(null);
-    setItemName("");
-    setExpiryDate("");
-    setQuantity("");
-    setPurchaseDate("");
-  };
-
-  // 4) Save changes
-  const handleSaveEdit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingItem || !fridgeId) return;
-
-    try {
-      const itemRef = doc(db, "fridges", fridgeId, "items", editingItem.id);
-      await updateDoc(itemRef, {
-        item_name: itemName,
-        expiration_date: expiryDate,
-        amount: quantity,
-        purchase_date: purchaseDate,
-      });
-
-      // Exit edit mode
-      setEditingItem(null);
-      setItemName("");
-      setExpiryDate("");
-      setQuantity("");
-      setPurchaseDate("");
-
-      // Refresh
-      await refreshItems();
-    } catch (err: any) {
-      setError("Failed to update item: " + err.message);
+  useEffect(() => {
+    if (!user && !loading) {
+      router.push("/login");
     }
-  };
+  }, [user, loading, router]);
 
-  // 5) Delete item
-  const handleDelete = async (itemId: string) => {
-    if (!fridgeId || !user) return;
-    if (!confirm("Are you sure you want to delete this item?")) return;
+  useEffect(() => {
+    if (!fridgeId) return;
+    const fetchFridge = async () => {
+      try {
+        const fridgeRef = doc(db, "fridges", fridgeId);
+        const fridgeSnap = await getDoc(fridgeRef);
+        if (fridgeSnap.exists()) {
+          setFridgeData({ id: fridgeSnap.id, ...fridgeSnap.data() });
+        } else {
+          setError("Fridge not found.");
+        }
+      } catch (err: any) {
+        setError(err.message);
+      }
+    };
+    fetchFridge();
+    fetchItems();
+  }, [fridgeId]);
 
-    try {
-      await deleteDoc(doc(db, "fridges", fridgeId, "items", itemId));
-      await refreshItems();
-    } catch (err: any) {
-      setError("Error deleting item: " + err.message);
-    }
-  };
-
-  // ----------------- Search & Sort ----------------- //
-
-  // Filter by search term
+  // Filter + Sort items
   const filteredItems = items.filter((item) =>
     item.item_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -195,17 +171,12 @@ export default function Overview({ fridgeId }: OverviewProps) {
     return dateA.getTime() - dateB.getTime();
   });
 
-  // ----------------- Rendering ----------------- //
-
   if (loading) return <p>Loading...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div className="p-4">
-      {/* Page Title / Header */}
       <h1 className="text-2xl font-bold mb-4">Fridge Overview</h1>
-
-      {/* If fridge data found */}
       {fridgeData ? (
         <div className="mb-4 p-4 rounded shadow bg-white text-black">
           <h2 className="text-xl font-semibold">{fridgeData.name}</h2>
@@ -222,11 +193,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
           placeholder="Search items..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="
-            p-2 rounded border border-gray-400 w-full 
-            text-black 
-            placeholder-gray-600
-          "
+          className="p-2 rounded border border-gray-400 w-full"
         />
       </div>
 
@@ -275,8 +242,9 @@ export default function Overview({ fridgeId }: OverviewProps) {
         </table>
       </div>
 
-      {/* Add / Edit Form */}
+      {/* Add or Edit Form */}
       <div className="mt-6 bg-[#1F2A30] p-4 rounded-lg">
+        {/* Switch form title depending on editingItem */}
         <h2 className="text-xl font-bold mb-4">
           {editingItem ? "Edit Item" : "Add New Item"}
         </h2>
@@ -293,7 +261,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
               placeholder="Item Name"
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
-              className="p-2 rounded bg-[#3D4E52] border border-gray-600 text-white"
+              className="p-2 rounded bg-[#3D4E52] border border-gray-600"
               required
             />
             <input
@@ -301,21 +269,21 @@ export default function Overview({ fridgeId }: OverviewProps) {
               placeholder="Quantity"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              className="p-2 rounded bg-[#3D4E52] border border-gray-600 text-white"
+              className="p-2 rounded bg-[#3D4E52] border border-gray-600"
               required
             />
             <input
               type="date"
               value={expiryDate}
               onChange={(e) => setExpiryDate(e.target.value)}
-              className="p-2 rounded bg-[#3D4E52] border border-gray-600 text-white"
+              className="p-2 rounded bg-[#3D4E52] border border-gray-600"
               required
             />
             <input
               type="date"
               value={purchaseDate}
               onChange={(e) => setPurchaseDate(e.target.value)}
-              className="p-2 rounded bg-[#3D4E52] border border-gray-600 text-white"
+              className="p-2 rounded bg-[#3D4E52] border border-gray-600"
               required
             />
           </div>
