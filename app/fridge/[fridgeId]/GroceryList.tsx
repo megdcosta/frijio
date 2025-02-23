@@ -26,10 +26,15 @@ interface GroceryListProps {
 
 export default function GroceryList({ fridgeId }: GroceryListProps) {
   // State to store the id of the checked item
-  const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>({});
+  const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>(
+    {}
+  );
 
   // Handle checkbox state change
-  const handleCheckboxChange = async (itemId: string, currentState: boolean) => {
+  const handleCheckboxChange = async (
+    itemId: string,
+    currentState: boolean
+  ) => {
     // Update local state
     setCheckedItems((prev) => ({
       ...prev,
@@ -130,13 +135,16 @@ export default function GroceryList({ fridgeId }: GroceryListProps) {
   };
 
   return (
-    <div className="p-4 max-w-4xl mx-auto ">
+    <div className="p-4 max-w-5xl mx-auto ">
       <h1 className="text-2xl font-bold mb-6">Grocery List</h1>
 
       {/* Add Item Form */}
       <div className="bg-green rounded-full mb-8 shadow-lg py-3">
         {error && <p className="text-red-500 mb-4">{error}</p>}
-        <form onSubmit={handleAddItem} className="space-y-4 flex flex-wrap gap-4 items-center px-10">
+        <form
+          onSubmit={handleAddItem}
+          className="space-y-4 flex flex-wrap gap-4 items-center px-10"
+        >
           <div className="flex flex-col md:flex-row gap-4 items-center">
             <label className="block text-white w-fit">Item Name</label>
             <input
@@ -149,16 +157,16 @@ export default function GroceryList({ fridgeId }: GroceryListProps) {
             />
             <label className="block text-white">Quantity</label>
             <input
-            type="text"
-            value={newQuantity}
-            onChange={(e) => setNewQuantity(e.target.value)}
-            className="w-52 p-2 rounded-full border border-text bg-white text-text placeholder-[#796d6d] indent-2"
-            placeholder="Enter quantity"
+              type="text"
+              value={newQuantity}
+              onChange={(e) => setNewQuantity(e.target.value)}
+              className="w-52 p-2 rounded-full border border-text bg-white text-text placeholder-[#796d6d] indent-2"
+              placeholder="Enter quantity"
             />
             <button
               type="submit"
               className="w-10 h-10 text-2xl bg-[#d28d82] text-white rounded-full font-bold hover:bg-[#db948a] transition shadow-sm flex items-center justify-center "
-              >
+            >
               +
             </button>
           </div>
@@ -191,7 +199,9 @@ export default function GroceryList({ fridgeId }: GroceryListProps) {
                         <input
                           type="checkbox"
                           checked={checkedItems[item.id] || false} // Only check if the item is checked
-                          onChange={() => handleCheckboxChange(item.id, checkedItems[item.id])} // Toggle check state
+                          onChange={() =>
+                            handleCheckboxChange(item.id, checkedItems[item.id])
+                          } // Toggle check state
                           className="hidden"
                         />
                         {/* Custom circular checkbox */}
@@ -206,9 +216,7 @@ export default function GroceryList({ fridgeId }: GroceryListProps) {
                       </label>
                     </td>
                     <td className="p-2 text-text">{item.name}</td>
-                    <td className="p-2 text-text">
-                      {item.quantity || "-"}
-                    </td>
+                    <td className="p-2 text-text">{item.quantity || "-"}</td>
                     <td className="p-2 text-text">
                       {item.addedBy === user?.uid ? "You" : item.addedBy}
                     </td>
