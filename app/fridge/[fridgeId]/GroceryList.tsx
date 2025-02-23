@@ -134,30 +134,30 @@ export default function GroceryList({ fridgeId }: GroceryListProps) {
       <h1 className="text-2xl font-bold mb-6">Grocery List</h1>
 
       {/* Add Item Form */}
-      <div className="bg-green rounded-full mb-8">
+      <div className="bg-green rounded-full mb-8 shadow-lg py-3">
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <form onSubmit={handleAddItem} className="space-y-4 flex flex-wrap gap-4 items-center px-10">
           <div className="flex flex-col md:flex-row gap-4 items-center">
-            <label className="block text-white mb-2 w-fit">Item Name</label>
+            <label className="block text-white w-fit">Item Name</label>
             <input
               type="text"
               value={newItem}
               onChange={(e) => setNewItem(e.target.value)}
-              className="w-full p-2 rounded-full border border-text bg-white text-text placeholder-[#796d6d] indent-2"
+              className="w-52 p-2 rounded-full border border-text bg-white text-text placeholder-[#796d6d] mr-4 indent-2"
               placeholder="Enter item name"
               required
             />
-            <label className="block text-white mb-2">Quantity</label>
+            <label className="block text-white">Quantity</label>
             <input
             type="text"
             value={newQuantity}
             onChange={(e) => setNewQuantity(e.target.value)}
-            className="w-full p-2 rounded-full border border-text bg-white text-text placeholder-[#796d6d] indent-2"
+            className="w-52 p-2 rounded-full border border-text bg-white text-text placeholder-[#796d6d] indent-2"
             placeholder="Enter quantity"
             />
             <button
               type="submit"
-              className="w-24 h-8 text-2xl bg-[#d28d82] text-white rounded-full font-bold hover:bg-[#db948a] transition shadow-sm flex items-center justify-center "
+              className="w-10 h-10 text-2xl bg-[#d28d82] text-white rounded-full font-bold hover:bg-[#db948a] transition shadow-sm flex items-center justify-center "
               >
               +
             </button>
@@ -166,7 +166,7 @@ export default function GroceryList({ fridgeId }: GroceryListProps) {
       </div>
 
       {/* Grocery Items List */}
-      <div className="bg-white p-4 rounded-lg">
+      <div className="bg-white p-4 rounded-lg shadow-lg">
         {loading ? (
           <p className="text-text">Loading items...</p>
         ) : items.length === 0 ? (
