@@ -31,7 +31,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
   const [itemName, setItemName] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [quantity, setQuantity] = useState("");
-  const [itemType, setItemType] = useState(""); // <-- new field for type
+  const [purchaseDate, setPurchaseDate] = useState("");
 
   // ----------------- Editing State ----------------- //
   const [editingItem, setEditingItem] = useState<any>(null);
@@ -54,17 +54,16 @@ export default function Overview({ fridgeId }: OverviewProps) {
 
     const fetchFridgeData = async () => {
       try {
-        // 1) Fetch the fridge document
+        // Fetch the fridge document
         const fridgeRef = doc(db, "fridges", fridgeId);
         const fridgeSnap = await getDoc(fridgeRef);
-
         if (!fridgeSnap.exists()) {
           setError("Fridge not found.");
           return;
         }
         setFridgeData({ id: fridgeSnap.id, ...fridgeSnap.data() });
 
-        // 2) Fetch items in the fridge
+        // Fetch items in the fridge
         await refreshItems();
       } catch (err: any) {
         setError(err.message);
@@ -105,7 +104,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
         item_name: itemName,
         expiration_date: expiryDate,
         amount: quantity,
-        type: itemType,
+        purchase_date: purchaseDate,
         created_at: serverTimestamp(),
         added_by: user.uid,
       });
@@ -114,7 +113,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
       setItemName("");
       setExpiryDate("");
       setQuantity("");
-      setItemType("");
+      setPurchaseDate("");
 
       // Refresh items
       await refreshItems();
@@ -129,7 +128,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
     setItemName(item.item_name || "");
     setExpiryDate(item.expiration_date || "");
     setQuantity(item.amount || "");
-    setItemType(item.type || "");
+    setPurchaseDate(item.purchase_date || "");
   };
 
   // 3) Cancel edit
@@ -138,7 +137,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
     setItemName("");
     setExpiryDate("");
     setQuantity("");
-    setItemType("");
+    setPurchaseDate("");
   };
 
   // 4) Save changes
@@ -152,7 +151,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
         item_name: itemName,
         expiration_date: expiryDate,
         amount: quantity,
-        type: itemType,
+        purchase_date: purchaseDate,
       });
 
       // Exit edit mode
@@ -160,9 +159,9 @@ export default function Overview({ fridgeId }: OverviewProps) {
       setItemName("");
       setExpiryDate("");
       setQuantity("");
-      setItemType("");
+      setPurchaseDate("");
 
-      // Refresh items
+      // Refresh
       await refreshItems();
     } catch (err: any) {
       setError("Failed to update item: " + err.message);
@@ -237,7 +236,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
           <thead>
             <tr className="border-b border-gray-600">
               <th className="text-left p-2">Name</th>
-              <th className="text-left p-2">Type</th>
               <th className="text-left p-2">Expiration Date</th>
               <th className="text-left p-2">Amount</th>
               <th className="text-left p-2">Actions</th>
@@ -246,7 +244,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
           <tbody>
             {sortedItems.length === 0 ? (
               <tr>
-                <td colSpan={5} className="text-center p-4">
+                <td colSpan={4} className="text-center p-4">
                   No items found.
                 </td>
               </tr>
@@ -254,7 +252,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
               sortedItems.map((item) => (
                 <tr key={item.id} className="border-b border-gray-600">
                   <td className="p-2">{item.item_name || "N/A"}</td>
-                  <td className="p-2">{item.type || "N/A"}</td>
                   <td className="p-2">{item.expiration_date || "N/A"}</td>
                   <td className="p-2">{item.amount || "N/A"}</td>
                   <td className="p-2 flex gap-2">
@@ -291,7 +288,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
           className="space-y-4"
         >
           <div className="grid grid-cols-2 gap-4">
-            {/* Item Name */}
             <input
               type="text"
               placeholder="Item Name"
@@ -300,8 +296,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
               className="p-2 rounded bg-[#3D4E52] border border-gray-600 text-white"
               required
             />
-
-            {/* Quantity */}
             <input
               type="number"
               placeholder="Quantity"
@@ -310,30 +304,6 @@ export default function Overview({ fridgeId }: OverviewProps) {
               className="p-2 rounded bg-[#3D4E52] border border-gray-600 text-white"
               required
             />
-
-            {/* Type Dropdown */}
-            <select
-              value={itemType}
-              onChange={(e) => setItemType(e.target.value)}
-              className="
-                p-2 rounded bg-[#3D4E52] border border-gray-600 text-white
-                max-h-48 
-                overflow-y-auto
-              "
-              required
-            >
-              <option value="">-- Select Type --</option>
-              <option value="Eggs/Dairy">Eggs/Dairy</option>
-              <option value="Fruit">Fruit</option>
-              <option value="Vegetables">Vegetables</option>
-              <option value="Meat">Meat</option>
-              <option value="Leftovers">Leftovers</option>
-              <option value="Frozen">Frozen</option>
-              <option value="Sauces/Condiments">Sauces/Condiments</option>
-              <option value="Other">Other</option>
-            </select>
-
-            {/* Expiration Date */}
             <input
               type="date"
               value={expiryDate}
@@ -341,9 +311,15 @@ export default function Overview({ fridgeId }: OverviewProps) {
               className="p-2 rounded bg-[#3D4E52] border border-gray-600 text-white"
               required
             />
+            <input
+              type="date"
+              value={purchaseDate}
+              onChange={(e) => setPurchaseDate(e.target.value)}
+              className="p-2 rounded bg-[#3D4E52] border border-gray-600 text-white"
+              required
+            />
           </div>
 
-          {/* Submit/Cancel Buttons */}
           <div className="flex gap-2">
             <button
               type="submit"

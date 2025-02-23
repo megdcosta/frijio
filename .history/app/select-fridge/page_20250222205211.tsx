@@ -14,8 +14,8 @@ export default function SelectFridgePage() {
   const [fridgeId, setFridgeId] = useState("");
   const [userFridges, setUserFridges] = useState<any[]>([]);
   const [error, setError] = useState("");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false); 
-  const [selectedFridge, setSelectedFridge] = useState<any>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // For dropdown visibility
+  const [selectedFridge, setSelectedFridge] = useState<any>(null); // For storing selected fridge
 
   useEffect(() => {
     if (!user) return;
@@ -27,9 +27,7 @@ export default function SelectFridgePage() {
           userData.fridgeIds.map(async (fridgeId: string) => {
             const fridgeRef = doc(db, "fridges", fridgeId);
             const fridgeSnap = await getDoc(fridgeRef);
-            return fridgeSnap.exists()
-              ? { id: fridgeSnap.id, ...fridgeSnap.data() }
-              : null;
+            return fridgeSnap.exists() ? { id: fridgeSnap.id, ...fridgeSnap.data() } : null;
           })
         );
         setUserFridges(userFridgeData.filter(Boolean));
@@ -43,8 +41,8 @@ export default function SelectFridgePage() {
     setError("");
     if (!user || fridgeName.trim() === "") return;
     try {
-      const newFridgeId = await createFridge(fridgeName, user.uid);
-      router.push(`/fridge/${newFridgeId}`);
+      const fridgeId = await createFridge(fridgeName, user.uid);
+      router.push(`/fridge/${fridgeId}`);
     } catch (err: any) {
       setError(err.message);
     }
@@ -78,20 +76,16 @@ export default function SelectFridgePage() {
 
       {/* If the user has fridges, allow them to select from a list */}
       {userFridges.length > 0 && (
-        <div className="relative mb-6 w-64 mx-auto">
-          {/* Dropdown Button */}
+        // Make this container 'relative' so the dropdown is positioned correctly
+        <div className="relative mb-6 w-full max-w-md">
           <button
             onClick={() => setIsDropdownOpen((prev) => !prev)}
-            className="p-2 border border-white text-white px-4 py-2 rounded-xl w-full font-semibold font-sans relative"
+            className="p-2 border border-white text-white px-4 py-2 rounded-xl w-full font-semibold font-sans"
           >
             {selectedFridge ? selectedFridge.name : "Select Your Fridge"}
-            {/* Arrow on the right side */}
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white">
-              ▼
-            </span>
           </button>
 
-          {/* Dropdown menu */}
+          {/* Dropdown menu (absolute + w-full to match the parent container) */}
           {isDropdownOpen && (
             <div className="absolute left-0 mt-2 w-full bg-white border border-gray-300 rounded-lg shadow-lg z-10">
               <ul className="py-1">
