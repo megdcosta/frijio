@@ -50,12 +50,12 @@ const FridgePage = () => {
         <div className="text-2xl font-bold font-playpen">frij.io</div>
       </header>
       <div className="flex px-2 font-semibold">
-        <button className="m-4 pr-8 text-xl w-fit font-bold">{fridge.name}</button>
+        <button className="m-4 pr-8 text-xl w-fit font-bold">
+          {fridge.name}
+        </button>
         <button
           className={`m-4 py-2 px-12 w-fit text-center rounded-full text-white font-semibold hover:bg-[#4a5f64] transition ${
-            activeTab === "overview"
-              ? "bg-[#2d3c40]"
-              : "bg-[#3d4e52]"
+            activeTab === "overview" ? "bg-[#2d3c40]" : "bg-[#3d4e52]"
           }`}
           onClick={() => setActiveTab("overview")}
         >
@@ -63,9 +63,7 @@ const FridgePage = () => {
         </button>
         <button
           className={`m-4 py-2 px-12 w-fit text-center rounded-full text-white font-semibold hover:bg-[#4a5f64] transition ${
-            activeTab === "grocery"
-              ? "bg-[#2d3c40]"
-              : "bg-[#3d4e52]"
+            activeTab === "grocery" ? "bg-[#2d3c40]" : "bg-[#3d4e52]"
           }`}
           onClick={() => setActiveTab("grocery")}
         >
@@ -73,9 +71,7 @@ const FridgePage = () => {
         </button>
         <button
           className={`m-4 py-2 px-12 w-fit text-center rounded-full text-white font-semibold hover:bg-[#4a5f64] transition ${
-            activeTab === "expense"
-              ? "bg-[#2d3c40]"
-              : "bg-[#3d4e52]"
+            activeTab === "expense" ? "bg-[#2d3c40]" : "bg-[#3d4e52]"
           }`}
           onClick={() => setActiveTab("expense")}
         >
