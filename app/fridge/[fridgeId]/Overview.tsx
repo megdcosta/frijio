@@ -506,7 +506,7 @@ export default function Overview({ fridgeId }: OverviewProps) {
             <button
               onClick={handleScanReceipt}
               disabled={isProcessing}
-              className="bg-green-600 text-white py-2 px-4 rounded-full hover:bg-green-700 transition"
+              className="bg-green text-white py-2 px-4 rounded-full hover:bg-green-700 transition"
             >
               {isProcessing ? "Processing..." : "Scan"}
             </button>
